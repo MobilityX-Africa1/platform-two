@@ -3,6 +3,7 @@ import { useNotionData } from '../hooks/useNotionData';
 import { MetricCard, MetricGrid } from '../components/MetricCard';
 import { RankBadge } from '../components/RankBadge';
 import { CardSkeletonGrid } from '../components/Skeletons';
+import { Breadcrumb } from '../components/Breadcrumb';
 import { formatUSDM, displayStage } from '../lib/format';
 
 export function VerticalPage() {
@@ -25,6 +26,7 @@ export function VerticalPage() {
 
   return (
     <div className="stack" style={{ gap: 32 }}>
+      <Breadcrumb to="/companies" label="Companies" />
       <div className="page-header">
         <h1>{decoded}</h1>
         <p style={{ marginTop: 8 }}>

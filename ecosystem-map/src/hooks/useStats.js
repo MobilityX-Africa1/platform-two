@@ -49,14 +49,72 @@ export function useStats() {
       companies.filter((c) => c.country).map((c) => c.country.id),
     );
 
+    const datedDeals = deals.filter((d) => d.date?.start);
+    const undatedInvestmentM = deals
+      .filter((d) => !d.date?.start)
+      .reduce((sum, d) => sum + (d.amountM || 0), 0);
+
+    // Undated deals are excluded from the year series entirely (see
+    // `undatedInvestmentM` above) rather than bucketed into a fake
+    // 'Unspecified' year — a trend line can't plot a non-date.
     const investmentByYear = Object.values(
-      deals.reduce((acc, d) => {
-        const year = d.date?.start ? new Date(d.date.start).getFullYear() : 'Unspecified';
+      datedDeals.reduce((acc, d) => {
+        const year = new Date(d.date.start).getFullYear();
         if (!acc[year]) acc[year] = { year, amount: 0 };
         acc[year].amount += d.amountM || 0;
         return acc;
       }, {}),
-    ).sort((a, b) => (a.year === 'Unspecified' ? 1 : b.year === 'Unspecified' ? -1 : a.year - b.year));
+    ).sort((a, b) => a.year - b.year);
+
+    // Trailing 8 quarters ending at the current (possibly partial) quarter,
+    // zero-filled for any quarter with no dated deals — real history for the
+    // "Total investment tracked" tile's sparkline + qtr-over-qtr delta, since
+    // companies/countries/allocators have no equivalent timestamped history
+    // (their Notion `created_time` is a one-off bulk-import date, not an
+    // organic "added on" signal, so no sparkline/delta is computed for them).
+    const now = new Date();
+    const amountByQuarterKey = datedDeals.reduce((acc, d) => {
+      const dt = new Date(d.date.start);
+      const key = `${dt.getFullYear()}-Q${Math.floor(dt.getMonth() / 3) + 1}`;
+      acc[key] = (acc[key] || 0) + (d.amountM || 0);
+      return acc;
+    }, {});
+    let qy = now.getFullYear();
+    let qq = Math.floor(now.getMonth() / 3) + 1;
+    const quarterKeys = [];
+    for (let i = 0; i < 8; i++) {
+      quarterKeys.unshift(`${qy}-Q${qq}`);
+      qq -= 1;
+      if (qq === 0) { qq = 4; qy -= 1; }
+    }
+    const investmentByQuarter = quarterKeys.map((key) => amountByQuarterKey[key] || 0);
+    const investmentThisQuarterM = amountByQuarterKey[quarterKeys[quarterKeys.length - 1]] || 0;
+
+    // Share of the leading deal type (by amount), now vs. ~12 months ago,
+    // both computed the same way (cumulative amount as of a date) so the
+    // comparison is apples-to-apples. Null when there isn't enough dated
+    // history on either side to compare, rather than a fabricated 0.
+    const dealSplitByAmount = [...dealSplit].sort((a, b) => b.amount - a.amount);
+    const leadingDealType = dealSplitByAmount[0]?.dealType ?? null;
+    let leadingDealTypeShiftPts = null;
+    if (leadingDealType) {
+      const shareAsOf = (cutoff) => {
+        const subset = datedDeals.filter((d) => new Date(d.date.start) <= cutoff);
+        const total = subset.reduce((s, d) => s + (d.amountM || 0), 0);
+        if (!total) return null;
+        const lead = subset
+          .filter((d) => (d.dealType || 'Unspecified') === leadingDealType)
+          .reduce((s, d) => s + (d.amountM || 0), 0);
+        return (lead / total) * 100;
+      };
+      const yearAgo = new Date(now);
+      yearAgo.setFullYear(yearAgo.getFullYear() - 1);
+      const nowShare = shareAsOf(now);
+      const pastShare = shareAsOf(yearAgo);
+      if (nowShare != null && pastShare != null) {
+        leadingDealTypeShiftPts = Math.round(nowShare - pastShare);
+      }
+    }
 
     // Amount flows through the deal's company -> Headquarters Country -> Region.
     // Deals whose company has no linked country bucket into 'Unspecified'
@@ -81,6 +139,11 @@ export function useStats() {
       leaderboard,
       investmentByYear,
       investmentByRegion,
+      undatedInvestmentM,
+      investmentByQuarter,
+      investmentThisQuarterM,
+      leadingDealType,
+      leadingDealTypeShiftPts,
     };
   }, [companies, countries, allocators, deals, status]);
 }

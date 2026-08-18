@@ -2,7 +2,20 @@ function richTextToPlain(arr) {
   return (arr || []).map((t) => t.plain_text).join('');
 }
 
-function toCamel(label) {
+// Some Notion rows carry an internal "not ready for publish" flag inline in
+// the text itself (e.g. "MOCK — ...", "PLACEHOLDER — no data yet", "No
+// verified deals tracked — mock placeholder") rather than leaving the field
+// blank. Treating that text as real content would surface it verbatim on the
+// public site, so it's normalized to null here — the same as an empty field
+// — everywhere this data is read from.
+const PLACEHOLDER_PATTERN = /^\s*(mock|placeholder)\b|mock placeholder/i;
+
+function richTextToPlainOrNull(arr) {
+  const text = richTextToPlain(arr);
+  return PLACEHOLDER_PATTERN.test(text) ? null : text;
+}
+
+export function toCamel(label) {
   return label
     .trim()
     .replace(/[^a-zA-Z0-9]+(.)/g, (_, chr) => chr.toUpperCase())
@@ -15,7 +28,7 @@ function propValue(prop) {
     case 'title':
       return richTextToPlain(prop.title);
     case 'rich_text':
-      return richTextToPlain(prop.rich_text);
+      return richTextToPlainOrNull(prop.rich_text);
     case 'number':
       return prop.number;
     case 'select':
@@ -49,7 +62,7 @@ function propValue(prop) {
  * confusing them with multi_select string arrays.
  */
 export function normalizePage(page) {
-  const record = { id: page.id };
+  const record = { id: page.id, lastEditedTime: page.last_edited_time };
   const relationKeys = [];
   let titleKey = null;
 
@@ -67,4 +80,11 @@ export function normalizePage(page) {
 
 export function normalizeAll(pages) {
   return pages.map(normalizePage);
+}
+
+// Looks up a normalized record's value by the exact Notion property label
+// (e.g. "Annual Savings EV vs ICE USD"), so callers never have to
+// hand-transcribe the camelCase key normalizePage() derived from it.
+export function getField(record, label) {
+  return record[toCamel(label)];
 }

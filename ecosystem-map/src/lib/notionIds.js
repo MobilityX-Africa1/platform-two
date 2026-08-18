@@ -6,4 +6,5 @@ export const DS = {
   capitalAllocators: '234060f7-8fd0-489e-92d3-f004fe46bf2a',
   dealTracker:       'd6a317b8-9ddf-40e8-9f77-27623daa3527',
   assessmentRecords: '61180369-0a71-4b02-abb1-9e93c7430685',
+  assetEconomics:    'a44e96c6-974d-4902-a7f6-5f806fd633f7',
 };

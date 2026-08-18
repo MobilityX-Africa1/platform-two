@@ -218,15 +218,78 @@ a { color: inherit; text-decoration: none; }
   .right-panel-inner { padding: var(--space-5) var(--space-4); }
 }
 
+/* The single frosted region covering the top of every page — sticky at
+   top:0 so it's always the first thing painted at the scroll edge, with
+   nothing rendered above it. Two independently-blurred sticky boxes stacked
+   (the old back-button-bar + this) each blur only their own slice of the
+   backdrop, which shows up as a visible seam — and ghosted double content —
+   exactly at the boundary between them. Making this the *only* sticky,
+   backdrop-filtered box removes that seam entirely, and also means the top
+   of the scroll area is never left unblurred regardless of whether a page
+   has a Back button, a Breadcrumb, or neither. */
 .page-header {
   position: sticky;
   top: 0;
   z-index: 10;
-  background: transparent;
+  background: rgba(247, 247, 248, 0.82);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
-  padding-bottom: var(--space-3);
+  padding-bottom: var(--space-6);
+  /* Without this, content scrolling up from below gets sliced by the box's
+     bottom edge with a hard line the instant it crosses it — a mask fading
+     the last stretch of the box to transparent turns that into a gradual
+     dissolve instead, so the frosted effect reads as "blurry" rather than
+     "clipped." The fade only eats into the padding reserved above, never
+     the title/subtitle text itself, which stays fully opaque. */
+  mask-image: linear-gradient(to bottom, black calc(100% - 28px), transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, black calc(100% - 28px), transparent 100%);
 }
+
+/* Reserves room for the floating .back-button pill (see below) so it
+   doesn't sit on top of the page title. Toggled by BackButton.jsx via a
+   body class, since only pages with an actual Back button need the space. */
+body.has-back-button .page-header {
+  padding-top: 48px;
+}
+
+/* Floats independently on top of .page-header's single frosted box instead
+   of living in its own frosted bar — a small opaque pill has no seam to
+   create, unlike a full-width translucent+blurred one stacked above another. */
+.back-button {
+  position: sticky;
+  top: var(--space-3);
+  z-index: 25;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  margin: var(--space-3) 0 var(--space-4);
+  padding: var(--space-1) var(--space-3) var(--space-1) var(--space-2);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--text-2);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  box-shadow: var(--shadow-sm);
+  transition: color 0.15s ease, border-color 0.15s ease, transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.back-button:hover { color: var(--plum); border-color: var(--plum); }
+.back-button:focus-visible { outline: 2px solid var(--plum); outline-offset: 2px; }
+.back-button:active { transform: scale(0.97); }
+
+/* ---------- breadcrumb link (deterministic "back to list", unlike
+   BackButton's browser-history-based navigate(-1)) ---------- */
+
+.breadcrumb-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: var(--plum);
+}
+.breadcrumb-link:hover { text-decoration: underline; }
+.breadcrumb-link:focus-visible { outline: 2px solid var(--plum); outline-offset: 2px; border-radius: var(--radius-sm); }
 
 /* ---------- left panel: header ---------- */
 
@@ -435,6 +498,12 @@ a { color: inherit; text-decoration: none; }
 }
 .tree-row.active .count { color: var(--muted); }
 
+/* Pinned quick-access row (e.g. Asset Economics) sits above the pillar tree —
+   same resting look as an ordinary nav item, just positioned first. */
+.tree-row-pinned:hover { background: var(--hover-blue); }
+.tree-row-pinned.active { background: var(--hover-blue); color: var(--text); font-weight: 600; }
+.tree-row-pinned.active .count { color: var(--muted); }
+
 .tree-children {
   margin-left: var(--space-5);
   border-left: 1px solid var(--border);
@@ -626,6 +695,32 @@ a { color: inherit; text-decoration: none; }
   transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.15s ease;
 }
 .metric-card:hover { box-shadow: var(--shadow-raised); transform: translateY(-2px); }
+.metric-card-link { cursor: pointer; }
+.metric-card-link:focus-visible { outline: 2px solid var(--plum); outline-offset: 2px; }
+.metric-card-link:active { transform: scale(0.98); }
+
+/* Compact tiles for the dashboard's top-line stat row — smaller than the
+   default .metric-card used on vertical/asset-economics pages. */
+.metric-grid-compact .metric-card { padding: var(--space-2) var(--space-3); gap: 1px; }
+.metric-grid-compact .metric-label { font-size: 9px; }
+.metric-grid-compact .metric-value { font-size: var(--text-lg); }
+.metric-grid-compact .metric-delta { font-size: 9px; margin-top: 1px; }
+
+.metric-card-top {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.metric-card-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.sparkline { flex-shrink: 0; overflow: visible; }
 
 .metric-label {
   font-size: var(--text-xs);
@@ -643,6 +738,18 @@ a { color: inherit; text-decoration: none; }
   color: var(--ink);
 }
 
+/* Same dark-green text tone as .chip-upstream's positive-signal color,
+   derived from the --leaf token — kept consistent rather than inventing a
+   second green. Never reused as a decorative chart color. */
+.metric-delta {
+  margin-top: 2px;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: #4E6B22;
+}
+
+.delta-positive { color: #4E6B22; font-weight: 600; }
+
 .stage-chip {
   display: flex;
   flex-direction: column;
@@ -656,6 +763,13 @@ a { color: inherit; text-decoration: none; }
 }
 .stage-chip .metric-label { font-size: 9px; }
 .stage-chip .metric-value { font-size: var(--text-sm); }
+
+.stage-chip-muted {
+  background: var(--bg);
+  border-color: var(--border);
+}
+.stage-chip-muted .metric-label,
+.stage-chip-muted .metric-value { color: var(--muted); }
 
 /* ---------- country profile page: bare-number stat row ---------- */
 
@@ -740,6 +854,189 @@ a { color: inherit; text-decoration: none; }
 .list-row:focus-visible { outline: 2px solid var(--plum); outline-offset: -2px; }
 .list-row:active { transform: scale(0.99); }
 
+/* ---------- ranked list (plain name/value rows — no bars, no axes) ---------- */
+
+.ranked-list { display: flex; flex-direction: column; }
+
+.ranked-list-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-2);
+  border-radius: var(--radius-sm);
+}
+.ranked-list-row:nth-child(even) { background: var(--bg); }
+
+.ranked-list-row-link {
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.ranked-list-row-link:hover { background: var(--hover-blue); transform: translateX(2px); }
+.ranked-list-row-link:focus-visible { outline: 2px solid var(--plum); outline-offset: -2px; }
+.ranked-list-row-link:active { transform: scale(0.99); }
+
+.ranked-list-label {
+  font-size: var(--text-sm);
+  color: var(--text);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ranked-list-value {
+  font-weight: 600;
+  font-size: var(--text-sm);
+  color: var(--ink);
+  flex-shrink: 0;
+}
+
+.ranked-list-divider {
+  border-top: 1px dashed var(--border);
+  margin: var(--space-2) var(--space-1);
+}
+
+.ranked-list-footnote .ranked-list-label,
+.ranked-list-footnote .ranked-list-value {
+  font-style: italic;
+  color: var(--muted);
+  font-weight: 400;
+}
+.ranked-list-footnote:nth-child(even) { background: transparent; }
+
+/* leaderboard reuses .ranked-list-row as a link, so it needs its own grid
+   (rank badge · name · amount · stage pill) layered on top */
+.leaderboard-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  align-items: center;
+  gap: var(--space-3);
+  text-decoration: none;
+  transition: background 0.15s ease, transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.leaderboard-row:hover { background: var(--hover-blue); transform: translateX(2px); }
+.leaderboard-row:focus-visible { outline: 2px solid var(--plum); outline-offset: -2px; }
+.leaderboard-row:active { transform: scale(0.99); }
+.leaderboard-name { font-weight: 600; color: var(--text); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.leaderboard-stage { flex-shrink: 0; }
+
+/* ---------- donut chart (deal split) ---------- */
+
+.donut-chart-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
+  flex-wrap: wrap;
+}
+
+.donut-chart { flex-shrink: 0; }
+
+.donut-center-value {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 17px;
+  font-weight: 700;
+  fill: var(--ink);
+}
+.donut-center-label {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  fill: var(--muted);
+}
+
+.donut-legend {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.donut-legend-item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+
+.donut-legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: var(--radius-full);
+  flex-shrink: 0;
+  margin-top: 4px;
+}
+
+.donut-legend-text { display: flex; flex-direction: column; gap: 1px; }
+.donut-legend-name { font-weight: 700; font-size: var(--text-base); color: var(--ink); }
+.donut-legend-detail { font-size: var(--text-sm); color: var(--text-2); }
+
+/* ---------- dashboard top grid ----------
+   3-column grid: [Top 5 leaderboard | Deal split by type | Companies by
+   vertical] over [Companies by stage | Investment by region | (vertical
+   card continues, spanning both rows)]. The vertical card spans both rows
+   so its height sets — and is set by — the combined height of the stacked
+   leaderboard + stage column beside it, with no hardcoded pixel values. */
+.dashboard-top-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-6) var(--space-4);
+}
+
+.dashboard-top-grid-cell {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.dashboard-top-grid-cell > .card {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.dashboard-top-grid-cell-tall { grid-row: span 2; }
+
+@media (max-width: 900px) {
+  .dashboard-top-grid { grid-template-columns: repeat(2, 1fr); }
+  .dashboard-top-grid-cell-tall { grid-row: span 1; }
+}
+
+@media (max-width: 560px) {
+  .dashboard-top-grid { grid-template-columns: 1fr; }
+}
+
+/* ---------- investment timeline (line chart) ---------- */
+
+.timeline-chart { display: flex; flex-direction: column; }
+.timeline-svg { display: block; overflow: visible; }
+
+.timeline-point-label {
+  font-size: 10px;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  fill: var(--text-2);
+}
+
+.timeline-peak-label {
+  font-size: 11px;
+  font-weight: 700;
+  fill: var(--ink);
+}
+
+.timeline-axis {
+  display: flex;
+  justify-content: space-between;
+  padding: 0 30px;
+  margin-top: 4px;
+}
+.timeline-axis span {
+  font-size: var(--text-xs);
+  font-family: var(--font-mono);
+  color: var(--muted);
+}
+
 table { width: 100%; border-collapse: collapse; }
 th {
   text-align: left;
@@ -792,3 +1089,169 @@ tr:last-child td { border-bottom: none; }
   color: #A34A2E;
   font-size: var(--text-sm);
 }
+
+/* ---------- asset economics: market comparison table + detail page ----------
+   Scoped local tokens rather than the global --plum theme — this feature's
+   reference design pins an exact violet ramp (already used by the savings
+   chart above it on the list page: RAMP_LOW/RAMP_HIGH in assetEconomics.js)
+   that's visually distinct from the app-wide brand purple. */
+
+.econ-scope {
+  --econ-bg: #f9f9f7;
+  --econ-surface: #fcfcfb;
+  --econ-ink: #0b0b0b;
+  --econ-ink-2: #52514e;
+  --econ-muted: #898781;
+  --econ-border: #e1e0d9;
+  --econ-row-alt: #f3f2ee;
+  --econ-accent: #4a3aa7;
+}
+
+.econ-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--econ-border);
+  border-radius: var(--radius-md);
+  background: var(--econ-surface);
+}
+
+.econ-table {
+  width: 100%;
+  min-width: 640px;
+  border-collapse: collapse;
+}
+
+.econ-table thead th {
+  text-align: right;
+  font-size: var(--text-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--econ-muted);
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 2px solid var(--econ-border);
+  white-space: nowrap;
+}
+.econ-table thead th:first-child { text-align: left; }
+
+.econ-table tbody td {
+  padding: var(--space-4);
+  border-bottom: 1px solid var(--econ-border);
+  font-size: var(--text-sm);
+  color: var(--econ-ink);
+  vertical-align: middle;
+}
+.econ-table tbody tr:last-child td { border-bottom: none; }
+
+.econ-table tbody tr {
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.econ-table tbody tr:nth-child(even) { background: var(--econ-row-alt); }
+.econ-table tbody tr:hover { background: var(--hover-blue); }
+.econ-table tbody tr:focus-visible { outline: 2px solid var(--econ-accent); outline-offset: -2px; }
+
+.econ-market-name { font-weight: 700; }
+
+.econ-num-cell {
+  text-align: right;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+.econ-ice-cell { color: var(--econ-ink-2); font-weight: 400; }
+.econ-ev-cell { color: var(--econ-accent); font-weight: 700; }
+.econ-pct-cell { font-weight: 700; }
+
+.econ-bar-cell { width: 62px; }
+.econ-bar-track {
+  display: inline-block;
+  width: 50px;
+  height: 6px;
+  background: var(--econ-row-alt);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+  vertical-align: middle;
+}
+.econ-bar-fill { display: block; height: 100%; border-radius: var(--radius-full); }
+
+.econ-footnote {
+  font-size: var(--text-xs);
+  font-style: italic;
+  color: var(--econ-muted);
+  margin-top: var(--space-2);
+}
+
+/* ---------- asset economics: detail page ---------- */
+
+.econ-breadcrumb {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: var(--econ-accent);
+}
+.econ-breadcrumb:hover { text-decoration: underline; }
+
+.econ-meta { color: var(--econ-muted); font-size: var(--text-sm); }
+
+.econ-stat-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: var(--space-3);
+}
+.econ-stat-tile {
+  border: 1px solid var(--econ-border);
+  border-radius: var(--radius);
+  background: var(--econ-surface);
+  padding: var(--space-3) var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.econ-stat-label {
+  font-size: var(--text-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--econ-muted);
+}
+.econ-stat-value {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--text-lg);
+  font-weight: 700;
+  color: var(--econ-ink);
+}
+.econ-stat-value.accent { color: var(--econ-accent); }
+
+.econ-section-title { font-size: var(--text-md); font-weight: 700; margin-bottom: var(--space-2); }
+
+.econ-section-table { width: 100%; border-collapse: collapse; }
+.econ-section-table th {
+  text-align: right;
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--econ-muted);
+  font-weight: 600;
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--econ-border);
+}
+.econ-section-table th:first-child { text-align: left; }
+.econ-section-table td {
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-sm);
+  border-bottom: 1px solid var(--econ-border);
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+.econ-section-table td:first-child {
+  font-family: var(--font-sans);
+  color: var(--econ-ink-2);
+  text-align: left;
+}
+.econ-section-table tbody tr:nth-child(even) td { background: var(--econ-row-alt); }
+.econ-section-table tbody tr:last-child td { border-bottom: none; }
+.econ-section-table tr.econ-total td { font-weight: 700; color: var(--econ-ink); }
+.econ-delta-cell { color: var(--econ-accent); font-weight: 600; }

@@ -15,6 +15,23 @@ export function formatUSDM(amountM) {
   return `$${(amountM * 1000).toFixed(0)}K`;
 }
 
+// Precise currency for unit-economics figures (fuel/electricity prices, per-km
+// costs) where formatUSD's K/M abbreviation would round away the actual value.
+export function formatMoney(amount, decimals = 0) {
+  if (amount == null) return '—';
+  const sign = amount < 0 ? '-' : '';
+  return `${sign}$${Math.abs(amount).toLocaleString('en-US', {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  })}`;
+}
+
+// Asset Economics rates are stored as whole-number percentages (27.57 = 27.57%).
+export function formatPercent(value, decimals = 1) {
+  if (value == null) return '—';
+  return `${value.toFixed(decimals)}%`;
+}
+
 export function formatNumber(n) {
   if (n == null) return '—';
   return n.toLocaleString();
@@ -27,6 +44,13 @@ export function formatDate(dateValue) {
     month: 'short',
     year: 'numeric',
   });
+}
+
+// Month + year only — for "updated Aug 2026"-style captions driven off a
+// Notion page's last_edited_time rather than a dedicated date property.
+export function formatMonthYear(isoString) {
+  if (!isoString) return '—';
+  return new Date(isoString).toLocaleDateString('en-GB', { month: 'short', year: 'numeric' });
 }
 
 // Strip the parenthetical ticket-size range Notion carries on the Stage

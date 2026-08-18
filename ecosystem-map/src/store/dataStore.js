@@ -4,12 +4,13 @@ import { normalizeAll } from '../lib/normalize';
 // Internal store keys stay short (companies/allocators/deals/countries) —
 // only the wire-level entity name changed when Notion's databases were
 // renamed to match Stuart's guidance doc. See CHANGES.md.
-const ENTITIES = ['countries', 'companies', 'allocators', 'deals'];
+const ENTITIES = ['countries', 'companies', 'allocators', 'deals', 'economics'];
 const DS_ENTITY = {
   countries: 'countries',
   companies: 'companiesPipeline',
   allocators: 'capitalAllocators',
   deals: 'dealTracker',
+  economics: 'assetEconomics',
 };
 
 // Publish gates Companies Pipeline and Capital Allocators — those records
@@ -79,6 +80,67 @@ function resolveRelations(recordsByType) {
     country.companies = country._related_companies ?? [];
   }
 
+  // Company <-> Capital Allocator, via shared operating country.
+  //
+  // There is no direct Company<->Allocator relation in Notion. The only
+  // structured link (Deal Tracker's "Investor" field) is populated on very
+  // few deals whose investor also happens to be a *published* allocator —
+  // most published allocators (see CHANGES.md's Publish gate) end up with
+  // zero deal-linked companies as a result, even though the underlying data
+  // is richer than that. Notion's own "Capital Allocators (via Country)"
+  // rollup on Companies Pipeline surfaces the same broader signal: which
+  // allocators are active in a company's market. Both halves of that path —
+  // company.country (via Location) and allocator.markets (via "African
+  // markets active") — are already resolved above, so it's rebuilt here
+  // client-side instead of requiring a new Notion field fetch. The
+  // free-text `Geo` tags (region names like "East Africa" and catch-alls
+  // like "Pan-African"/"Global") are folded in too since every published
+  // allocator has Geo set but only about a third has the structured
+  // "African markets active" relation populated.
+  const REGION_GEO_TAGS = new Set([
+    'East Africa', 'West Africa', 'North Africa', 'Southern Africa', 'Central Africa',
+  ]);
+  const UNIVERSAL_GEO_TAGS = new Set(['Pan-African', 'Global']);
+
+  function activeCountryIds(allocator) {
+    const ids = new Set((allocator.markets || []).map((c) => c.id));
+    for (const tag of allocator.geo || []) {
+      if (UNIVERSAL_GEO_TAGS.has(tag)) {
+        recordsByType.countries.forEach((c) => ids.add(c.id));
+      } else if (REGION_GEO_TAGS.has(tag)) {
+        recordsByType.countries.filter((c) => c.region === tag).forEach((c) => ids.add(c.id));
+      } else {
+        recordsByType.countries.filter((c) => c.name === tag).forEach((c) => ids.add(c.id));
+      }
+    }
+    return ids;
+  }
+
+  for (const allocator of recordsByType.allocators) {
+    const marketIds = activeCountryIds(allocator);
+    allocator.marketCompanies = recordsByType.companies.filter(
+      (c) => c.country && marketIds.has(c.country.id),
+    );
+    allocator.connectedCompanies = [
+      ...new Map(
+        [...allocator.portfolio, ...allocator.marketCompanies].map((c) => [c.id, c]),
+      ).values(),
+    ];
+  }
+  for (const company of recordsByType.companies) {
+    company.marketAllocators = recordsByType.allocators.filter((a) =>
+      (a.marketCompanies || []).some((c) => c.id === company.id),
+    );
+  }
+  // "Country (Link)" is the only relation on Asset Economics, and each row
+  // covers a single market, so the first match is the whole relationship.
+  for (const econ of recordsByType.economics) {
+    econ.country = econ._related_countries?.[0] ?? null;
+  }
+  for (const country of recordsByType.countries) {
+    country.economics = country._related_economics?.[0] ?? null;
+  }
+
   return recordsByType;
 }
 
@@ -92,6 +154,7 @@ export const useDataStore = create((set, get) => ({
   companies: [],
   allocators: [],
   deals: [],
+  economics: [],
 
   async fetchAll({ fresh = false } = {}) {
     // A refresh of already-loaded data must not flip `status` away from

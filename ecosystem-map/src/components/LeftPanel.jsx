@@ -1,5 +1,4 @@
 import { useCallback, useRef, useState } from 'react';
-import { LayoutDashboard } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import { StatusBar } from './StatusBar';
 import { HierarchyTree } from './HierarchyTree';
@@ -78,7 +77,7 @@ export function LeftPanel({ collapsed }) {
           style={{ marginBottom: 'var(--space-3)' }}
           title="Dashboard"
         >
-          <LayoutDashboard size={14} />
+          <span className="material-icons" style={{ fontSize: 14 }}>dashboard</span>
           {!collapsed && <span>Dashboard</span>}
         </NavLink>
 

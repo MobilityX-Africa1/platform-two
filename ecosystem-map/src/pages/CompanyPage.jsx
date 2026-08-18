@@ -7,7 +7,8 @@ import { ScoreArc } from '../components/ScoreArc';
 import { CardSkeletonGrid } from '../components/Skeletons';
 import { CompanyLogo } from '../components/CompanyLogo';
 import { CountryFlag } from '../components/CountryFlag';
-import { formatDate, displayStage } from '../lib/format';
+import { Breadcrumb } from '../components/Breadcrumb';
+import { formatDate, displayStage, formatNumber, formatUSDM } from '../lib/format';
 
 export function CompanyPage() {
   const { id } = useParams();
@@ -16,7 +17,14 @@ export function CompanyPage() {
   if (status !== 'ready') return <CardSkeletonGrid count={4} />;
 
   const company = companies.find((c) => c.id === id);
-  if (!company) return <p>Company not found.</p>;
+  if (!company) {
+    return (
+      <div className="stack" style={{ gap: 16 }}>
+        <p>Company not found.</p>
+        <Breadcrumb to="/companies" label="Companies" />
+      </div>
+    );
+  }
 
   const companyDeals = deals
     .filter((d) => d.company?.id === company.id)
@@ -30,6 +38,7 @@ export function CompanyPage() {
 
   return (
     <div className="stack" style={{ gap: 32 }}>
+      <Breadcrumb to="/companies" label="Companies" />
       <div className="row page-header" style={{ gap: 10 }}>
         <CompanyLogo name={company.name} website={company.website} size={44} />
         <RankBadge rank={company.rankingOrder} />
@@ -45,6 +54,7 @@ export function CompanyPage() {
               </Link>
             ))}
             {company.stage && <span className="chip chip-neutral">{displayStage(company.stage)}</span>}
+            {company.status && <span className="chip chip-neutral">{company.status}</span>}
             {company.currentlyFundraising && (
               <span className="chip chip-cross-ecosystem">Fundraising</span>
             )}
@@ -81,7 +91,13 @@ export function CompanyPage() {
               </>
             )}
           </p>
-          {company.subVertical && <p style={{ marginTop: 4 }}>{company.subVertical}</p>}
+          {(company.subVerticalTags || []).length > 0 && (
+            <div className="row" style={{ gap: 6, flexWrap: 'wrap', marginTop: 8 }}>
+              {company.subVerticalTags.map((t) => (
+                <span key={t} className="chip chip-neutral">{t}</span>
+              ))}
+            </div>
+          )}
         </div>
 
         {isTop50 && (
@@ -105,17 +121,35 @@ export function CompanyPage() {
       </div>
 
       <div className="row" style={{ gap: 12, flexWrap: 'wrap' }}>
-        {company.revenueStage && (
-          <div className="card metric-card" style={{ maxWidth: 220 }}>
-            <span className="metric-label">Revenue stage</span>
-            <span className="metric-value" style={{ fontSize: 16 }}>{company.revenueStage}</span>
-          </div>
-        )}
         <div className="card metric-card" style={{ maxWidth: 220 }}>
           <span className="metric-label">Funding rounds</span>
           <span className="metric-value">{companyDeals.length}</span>
         </div>
+        {company.totalFundingRaisedM != null && (
+          <div className="card metric-card" style={{ maxWidth: 220 }}>
+            <span className="metric-label">Total funding raised</span>
+            <span className="metric-value">{formatUSDM(company.totalFundingRaisedM)}</span>
+          </div>
+        )}
+        {company.estimatedStationCount != null && (
+          <div className="card metric-card" style={{ maxWidth: 220 }}>
+            <span className="metric-label">Estimated stations</span>
+            <span className="metric-value">{formatNumber(company.estimatedStationCount)}</span>
+          </div>
+        )}
       </div>
+
+      {(company.networkType || (company.stationType || []).length > 0) && (
+        <section>
+          <h2 className="section-title">Asset & network</h2>
+          <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
+            {company.networkType && <span className="chip chip-neutral">{company.networkType} network</span>}
+            {(company.stationType || []).map((t) => (
+              <span key={t} className="chip chip-neutral">{t}</span>
+            ))}
+          </div>
+        </section>
+      )}
 
       {isTop50 && (
         <section>
@@ -178,6 +212,27 @@ export function CompanyPage() {
           {investors.length === 0 && <p style={{ padding: 12 }}>No investors recorded yet.</p>}
         </div>
       </section>
+
+      {(company.marketAllocators || []).length > 0 && (
+        <section>
+          <h2 className="section-title">Capital allocators active in this market</h2>
+          <p className="muted" style={{ marginTop: -12, marginBottom: 12 }}>
+            Allocators active in {company.country?.name ?? 'this company’s market'} — not
+            necessarily investors in {company.name}.
+          </p>
+          <div className="card stack" style={{ padding: 8, gap: 0 }}>
+            {company.marketAllocators.map((a) => (
+              <Link key={a.id} to={`/allocator/${a.id}`} className="list-row">
+                <CompanyLogo name={a.name} website={a.website} size={28} />
+                <span style={{ fontWeight: 600 }}>{a.name}</span>
+                <span className="chip chip-neutral" style={{ marginLeft: 'auto' }}>
+                  {a.typeOfInvestor}
+                </span>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   );
 }
