@@ -13,6 +13,10 @@ dist-ssr
 *.local
 .env
 
+# Puppeteer QA screenshots (frontend/scripts/screenshot*.mjs) — dev-only
+# artifacts, never part of the deployed app.
+screenshots/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

@@ -63,7 +63,7 @@ npm init -y 2>/dev/null; npm install puppeteer
 node -e "const p = require('puppeteer'); p.launch().then(b => { console.log('Puppeteer OK'); b.close(); })"
 ```
 
-### screenshot.mjs — create this file in the project root if it does not exist
+### scripts/screenshot.mjs — create this file if it does not exist
 
 ```js
 import puppeteer from 'puppeteer';
@@ -94,14 +94,14 @@ console.log(`Saved: ${outPath}`);
 
 ```bash
 # Standard screenshot
-node screenshot.mjs http://localhost:3000
+node scripts/screenshot.mjs http://localhost:3000
 
 # With a label (for comparison rounds)
-node screenshot.mjs http://localhost:3000 before-fix
-node screenshot.mjs http://localhost:3000 after-fix
+node scripts/screenshot.mjs http://localhost:3000 before-fix
+node scripts/screenshot.mjs http://localhost:3000 after-fix
 
 # Mobile viewport — add a second script or flag
-node screenshot.mjs http://localhost:3000 mobile
+node scripts/screenshot.mjs http://localhost:3000 mobile
 ```
 
 Screenshots are saved to `./screenshots/` — auto-incremented, never overwritten.
