@@ -65,9 +65,12 @@ export function FloatingChat() {
             )}
             {!loading && result?.type === 'answer' && (
               <div>
-                <p style={{ whiteSpace: 'pre-wrap', fontSize: 'var(--text-sm)' }}>{result.payload.answer}</p>
+                <p style={{ whiteSpace: 'pre-wrap', fontSize: 'var(--text-sm)' }}>
+                  {result.payload.result?.summary || result.payload.raw}
+                </p>
                 <p className="eyebrow" style={{ marginTop: 12 }}>
-                  {result.payload.toolCalls} Notion lookup{result.payload.toolCalls === 1 ? '' : 's'} · live from Notion
+                  {result.payload.toolCalls} Notion lookup{result.payload.toolCalls === 1 ? '' : 's'} ·{' '}
+                  {result.payload.result ? 'full breakdown on the page' : 'live from Notion'}
                 </p>
               </div>
             )}

@@ -1657,6 +1657,20 @@ tr:last-child td { border-bottom: none; }
   font-size: var(--text-sm);
 }
 
+/* Data-quality notes on a query result (missing relations, a cut-short
+   search) — deliberately quieter than .error-banner since these aren't
+   errors, just meta-commentary about the answer's completeness. */
+.caveat-banner {
+  padding: var(--space-3) var(--space-4);
+  background: var(--plum-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text-2);
+}
+.caveat-banner .eyebrow { display: block; margin-bottom: var(--space-1); }
+.caveat-banner ul { margin: 0; padding-left: var(--space-4); font-size: var(--text-sm); }
+.caveat-banner li { margin-top: 2px; }
+
 /* ---------- stat tile + section table ----------
    Same structural recipe as the Asset Economics detail page (bordered stat
    tiles, zebra-striped section tables) but on the main brand tokens — --plum

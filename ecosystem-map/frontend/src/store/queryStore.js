@@ -17,7 +17,18 @@ export const useQueryStore = create((set) => ({
       if (!res.ok) throw new Error(data.error || `Request failed (${res.status})`);
       set({
         loading: false,
-        result: { type: 'answer', title: text, payload: { answer: data.answer, toolCalls: data.toolCalls } },
+        result: {
+          type: 'answer',
+          title: text,
+          payload: {
+            queryType: data.queryType,
+            result: data.result,
+            raw: data.raw,
+            parseError: data.parseError,
+            toolCalls: data.toolCalls,
+            capped: data.capped,
+          },
+        },
       });
     } catch (err) {
       set({

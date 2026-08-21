@@ -24,10 +24,199 @@ Tool strategy:
 - Use get_page_content to read the full text of a specific page (e.g. a company's detail page or a report).
 - Chain tools as needed — search, then drill into what you found — rather than guessing IDs.
 
-When answering:
-- Base your answer only on what the tools return. If you can't find something after searching, say so plainly rather than guessing.
-- Mention which records or pages you drew from so the answer is checkable.
-- Keep answers focused and skip preamble.`;
+Grounding rules:
+- Base your answer only on what the tools return. If you can't find something after searching, say so in a "caveats" note rather than guessing.
+- Every company or allocator row returned by query_database carries its Notion page "id" — always carry that id through into your final answer's "id" field so the app can link to that record's own page. Never invent an id and never omit one you actually have.
+- If rows are excluded from a count for a data-quality reason (missing relation, unpublished record, ambiguous match), say so as a caveat instead of silently dropping them from the total.
+- Note explicitly (in a company's "status" field or as a caveat) when a company in your result is closed down, acquired, or otherwise inactive — don't just fold that into a paragraph.
+
+Response format — this is the most important rule:
+Once you are done gathering information and are ready to give your final answer (i.e. not calling a tool), respond with ONLY valid JSON matching one of the schemas below — selected by the "queryType" that best fits the question. Do not include markdown formatting, prose explanations outside the JSON, or code fences. Do not wrap the JSON in \`\`\`json or any other delimiter — the raw response body must be valid, parseable JSON and nothing else.
+
+1. "company_list" — for questions asking to list/filter/group companies (e.g. "which companies operate in Kenya?"):
+{
+  "queryType": "company_list",
+  "summary": "43 companies found in Kenya, grouped by category",
+  "totalCount": 43,
+  "groups": [
+    {
+      "label": "Top 50 / Ranked Cohort",
+      "companies": [
+        { "name": "BasiGo", "vertical": "EV Assets Hardware", "rank": 1, "fundingRaised": "$50.5m", "note": "Electric buses + Pay-As-You-Drive", "status": "active", "id": "notion-page-id" }
+      ]
+    }
+  ],
+  "caveats": ["7 companies operating in Kenya have no Location relation set and are excluded from this count"]
+}
+
+2. "investment_summary" — for questions about capital raised/deployed (e.g. "investment in EV Asset Hardware"):
+{
+  "queryType": "investment_summary",
+  "summary": "$182.4m raised across 26 deals in EV Asset Hardware since 2021",
+  "totalUSD": "$182.4m",
+  "dealCount": 26,
+  "byYear": [{ "year": "2024", "totalUSD": "$61.2m", "dealCount": 9 }],
+  "byCountry": [{ "country": "Kenya", "totalUSD": "$74.0m", "dealCount": 11 }],
+  "caveats": []
+}
+
+3. "country_comparison" — for questions comparing two or more countries:
+{
+  "queryType": "country_comparison",
+  "summary": "Kenya leads on company count; Nigeria leads on total funding raised",
+  "countries": [
+    { "name": "Kenya", "stats": [{ "label": "Companies tracked", "value": "43" }, { "label": "Total funding raised", "value": "$210m" }] }
+  ],
+  "caveats": []
+}
+
+4. "single_metric" — for a single number/fact question (e.g. "how many companies in Nigeria?"):
+{
+  "queryType": "single_metric",
+  "summary": "18 companies are tracked in Nigeria",
+  "value": "18",
+  "label": "Companies tracked in Nigeria",
+  "context": "Includes 2 in early due diligence, not yet published",
+  "caveats": []
+}
+
+Every field shown above is required in your output, even when empty — use "" for an unknown optional string, null for an unknown optional number, or [] for an empty list. Never add fields not in the schema, and never omit "caveats" (send [] when there is nothing to flag).`;
+
+// Mirrors the schemas documented in SYSTEM_PROMPT — enforced structurally via
+// output_config.format so a malformed/prose response becomes the rare
+// exception (refusal, truncation) rather than the norm. additionalProperties
+// must be false on every object per the structured-outputs contract, so
+// "flexible" bags of data (per-year/per-country/per-country-stat breakdowns)
+// are modelled as arrays of {label,value}-shaped rows instead of open maps.
+const companySchema = {
+  type: 'object',
+  properties: {
+    name: { type: 'string' },
+    vertical: { type: ['string', 'null'] },
+    rank: { type: ['number', 'null'] },
+    fundingRaised: { type: ['string', 'null'] },
+    note: { type: ['string', 'null'] },
+    status: { type: ['string', 'null'] },
+    id: { type: ['string', 'null'] },
+  },
+  required: ['name', 'vertical', 'rank', 'fundingRaised', 'note', 'status', 'id'],
+  additionalProperties: false,
+};
+
+const companyListSchema = {
+  type: 'object',
+  properties: {
+    queryType: { type: 'string', enum: ['company_list'] },
+    summary: { type: 'string' },
+    totalCount: { type: 'number' },
+    groups: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          label: { type: 'string' },
+          companies: { type: 'array', items: companySchema },
+        },
+        required: ['label', 'companies'],
+        additionalProperties: false,
+      },
+    },
+    caveats: { type: 'array', items: { type: 'string' } },
+  },
+  required: ['queryType', 'summary', 'totalCount', 'groups', 'caveats'],
+  additionalProperties: false,
+};
+
+const investmentSummarySchema = {
+  type: 'object',
+  properties: {
+    queryType: { type: 'string', enum: ['investment_summary'] },
+    summary: { type: 'string' },
+    totalUSD: { type: 'string' },
+    dealCount: { type: 'number' },
+    byYear: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          year: { type: 'string' },
+          totalUSD: { type: 'string' },
+          dealCount: { type: 'number' },
+        },
+        required: ['year', 'totalUSD', 'dealCount'],
+        additionalProperties: false,
+      },
+    },
+    byCountry: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          country: { type: 'string' },
+          totalUSD: { type: 'string' },
+          dealCount: { type: 'number' },
+        },
+        required: ['country', 'totalUSD', 'dealCount'],
+        additionalProperties: false,
+      },
+    },
+    caveats: { type: 'array', items: { type: 'string' } },
+  },
+  required: ['queryType', 'summary', 'totalUSD', 'dealCount', 'byYear', 'byCountry', 'caveats'],
+  additionalProperties: false,
+};
+
+const countryComparisonSchema = {
+  type: 'object',
+  properties: {
+    queryType: { type: 'string', enum: ['country_comparison'] },
+    summary: { type: 'string' },
+    countries: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          name: { type: 'string' },
+          stats: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: { label: { type: 'string' }, value: { type: 'string' } },
+              required: ['label', 'value'],
+              additionalProperties: false,
+            },
+          },
+        },
+        required: ['name', 'stats'],
+        additionalProperties: false,
+      },
+    },
+    caveats: { type: 'array', items: { type: 'string' } },
+  },
+  required: ['queryType', 'summary', 'countries', 'caveats'],
+  additionalProperties: false,
+};
+
+const singleMetricSchema = {
+  type: 'object',
+  properties: {
+    queryType: { type: 'string', enum: ['single_metric'] },
+    summary: { type: 'string' },
+    value: { type: 'string' },
+    label: { type: 'string' },
+    context: { type: ['string', 'null'] },
+    caveats: { type: 'array', items: { type: 'string' } },
+  },
+  required: ['queryType', 'summary', 'value', 'label', 'context', 'caveats'],
+  additionalProperties: false,
+};
+
+const RESPONSE_SCHEMA = {
+  anyOf: [companyListSchema, investmentSummarySchema, countryComparisonSchema, singleMetricSchema],
+};
+
+const FINALIZE_INSTRUCTION =
+  'Give your final answer now, as ONLY valid JSON matching one of the schemas described in the system prompt — no markdown, no prose outside the JSON, no code fences.';
 
 const tools = [
   {
@@ -100,6 +289,59 @@ function firstText(content) {
   return content.find((block) => block.type === 'text')?.text ?? '';
 }
 
+// Makes one extra, tools-free call once the gathering loop is done, with
+// output_config.format enforcing the JSON schema structurally — the system
+// prompt instruction covers *content* (which queryType, what to put in each
+// field), this covers *shape* (guaranteed-parseable JSON), so a malformed
+// response should only happen on a refusal or a max_tokens truncation.
+async function finalizeStructuredAnswer(anthropic, messages) {
+  const finalizeMessages = [...messages, { role: 'user', content: FINALIZE_INSTRUCTION }];
+  return anthropic.messages.create({
+    model: MODEL,
+    max_tokens: 8192,
+    system: SYSTEM_PROMPT,
+    output_config: { format: { type: 'json_schema', schema: RESPONSE_SCHEMA } },
+    messages: finalizeMessages,
+  });
+}
+
+// Single response contract for both the happy path and the malformed-JSON
+// fallback: `result`/`queryType` are set on success, `raw` is always set so
+// the frontend can show a raw-response card instead of crashing when
+// `result` is null. Malformed responses are logged server-side (Vercel
+// function logs) so a queryType that's prone to breaking schema can be
+// spotted and the prompt adjusted.
+function sendStructured(res, response, toolCalls, capped = false) {
+  const raw = firstText(response.content);
+  let result = null;
+  let parseError = null;
+  try {
+    result = JSON.parse(raw);
+  } catch (err) {
+    parseError = err.message;
+  }
+  if (!result && response.stop_reason === 'refusal') {
+    parseError = parseError || 'Model refused to answer';
+  }
+  if (parseError) {
+    console.error('[chat] malformed structured response', {
+      toolCalls,
+      capped,
+      stopReason: response.stop_reason,
+      parseError,
+      raw,
+    });
+  }
+  return res.status(200).json({
+    queryType: result?.queryType ?? null,
+    result,
+    raw,
+    parseError,
+    toolCalls,
+    capped,
+  });
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST');
@@ -131,7 +373,8 @@ export default async function handler(req, res) {
       messages.push({ role: 'assistant', content: response.content });
 
       if (response.stop_reason !== 'tool_use') {
-        return res.status(200).json({ answer: firstText(response.content), toolCalls: turn });
+        const finalResponse = await finalizeStructuredAnswer(anthropic, messages);
+        return sendStructured(res, finalResponse, turn);
       }
 
       const toolUseBlocks = response.content.filter((block) => block.type === 'tool_use');
@@ -162,19 +405,10 @@ export default async function handler(req, res) {
     console.warn(`[chat] hit MAX_TOOL_CALLS (${MAX_TOOL_CALLS}) — requesting final answer`);
     messages.push({
       role: 'user',
-      content: 'You have reached the maximum number of tool calls for this question. Answer now using only the information already gathered, and note if anything is incomplete.',
+      content: 'You have reached the maximum number of tool calls for this question. Answer now using only the information already gathered, and note in "caveats" that the search was cut short.',
     });
-    const finalResponse = await anthropic.messages.create({
-      model: MODEL,
-      max_tokens: 4096,
-      system: SYSTEM_PROMPT,
-      messages,
-    });
-    return res.status(200).json({
-      answer: firstText(finalResponse.content),
-      toolCalls: MAX_TOOL_CALLS,
-      capped: true,
-    });
+    const finalResponse = await finalizeStructuredAnswer(anthropic, messages);
+    return sendStructured(res, finalResponse, MAX_TOOL_CALLS, true);
   } catch (err) {
     console.error('[chat] error', err);
     const status = err?.status && Number.isInteger(err.status) ? err.status : 500;

@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useQueryStore } from '../store/queryStore';
 
 // Detail pages that render their own deterministic <Breadcrumb> link back to
 // a fixed list (e.g. CountryPage's "‹ Countries") already give the user a way
@@ -20,7 +21,12 @@ const HAS_OWN_BREADCRUMB = [
 export function BackButton() {
   const navigate = useNavigate();
   const location = useLocation();
+  // QueryResultCard renders its own "New query" breadcrumb-style pill
+  // whenever a query is active/loading — showing this generic Back pill at
+  // the same time would stack two identical sticky affordances on screen.
+  const hasActiveQuery = useQueryStore((s) => s.result != null || s.loading);
   const canGoBack =
+    !hasActiveQuery &&
     location.pathname !== '/' &&
     location.key !== 'default' &&
     !HAS_OWN_BREADCRUMB.some((re) => re.test(location.pathname));

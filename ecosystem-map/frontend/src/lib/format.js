@@ -116,3 +116,13 @@ export function statusChipClass(value) {
   if (NEGATIVE_STATUS.test(value)) return 'chip-cross-ecosystem';
   return 'chip-neutral';
 }
+
+// A query-result company's "status" is free text written by Claude, not a
+// fixed enum, so this is a loose keyword match rather than an exact-value
+// switch — used by CompanyListResult to strike through and badge companies
+// that are no longer operating instead of burying that in prose.
+const INACTIVE_STATUS = /\b(closed|shut ?down|acquired|defunct|inactive|dissolved|wound ?down)\b/i;
+
+export function isInactiveStatus(status) {
+  return !!status && INACTIVE_STATUS.test(status);
+}
