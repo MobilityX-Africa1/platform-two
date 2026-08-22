@@ -92,7 +92,7 @@ export default defineConfig(({ mode }) => {
       react(),
       vercelApiPlugin(env, [
         ['/api/notion', ['NOTION_TOKEN'], 'backend/api/notion.js'],
-        ['/api/chat', ['NOTION_TOKEN', 'ANTHROPIC_API_KEY'], 'backend/api/chat.js'],
+        ['/api/chat', ['NOTION_TOKEN', 'GEMINI_API_KEY'], 'backend/api/chat.js'],
       ]),
     ],
   }

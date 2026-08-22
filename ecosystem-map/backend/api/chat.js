@@ -1,11 +1,11 @@
-import Anthropic from '@anthropic-ai/sdk';
+import { GoogleGenAI } from '@google/genai';
 import { searchNotion, queryDatabase, getPageContent } from './_lib/notionTools.js';
 
-// Give the agentic loop (Notion round-trips + several Claude turns) more
+// Give the agentic loop (Notion round-trips + several Gemini turns) more
 // room than the 10s serverless default.
 export const config = { maxDuration: 60 };
 
-const MODEL = 'claude-opus-5';
+const MODEL = 'gemini-3.6-flash';
 const MAX_TOOL_CALLS = 8;
 
 const SYSTEM_PROMPT = `You are the AI assistant embedded in MobilityX's ecosystem map, a platform tracking Africa's mobility sector. You answer questions by searching and reading a connected Notion workspace — you have no built-in knowledge of its contents, so always look things up.
@@ -82,139 +82,6 @@ Once you are done gathering information and are ready to give your final answer 
 
 Every field shown above is required in your output, even when empty — use "" for an unknown optional string, null for an unknown optional number, or [] for an empty list. Never add fields not in the schema, and never omit "caveats" (send [] when there is nothing to flag).`;
 
-// Mirrors the schemas documented in SYSTEM_PROMPT — enforced structurally via
-// output_config.format so a malformed/prose response becomes the rare
-// exception (refusal, truncation) rather than the norm. additionalProperties
-// must be false on every object per the structured-outputs contract, so
-// "flexible" bags of data (per-year/per-country/per-country-stat breakdowns)
-// are modelled as arrays of {label,value}-shaped rows instead of open maps.
-const companySchema = {
-  type: 'object',
-  properties: {
-    name: { type: 'string' },
-    vertical: { type: ['string', 'null'] },
-    rank: { type: ['number', 'null'] },
-    fundingRaised: { type: ['string', 'null'] },
-    note: { type: ['string', 'null'] },
-    status: { type: ['string', 'null'] },
-    id: { type: ['string', 'null'] },
-  },
-  required: ['name', 'vertical', 'rank', 'fundingRaised', 'note', 'status', 'id'],
-  additionalProperties: false,
-};
-
-const companyListSchema = {
-  type: 'object',
-  properties: {
-    queryType: { type: 'string', enum: ['company_list'] },
-    summary: { type: 'string' },
-    totalCount: { type: 'number' },
-    groups: {
-      type: 'array',
-      items: {
-        type: 'object',
-        properties: {
-          label: { type: 'string' },
-          companies: { type: 'array', items: companySchema },
-        },
-        required: ['label', 'companies'],
-        additionalProperties: false,
-      },
-    },
-    caveats: { type: 'array', items: { type: 'string' } },
-  },
-  required: ['queryType', 'summary', 'totalCount', 'groups', 'caveats'],
-  additionalProperties: false,
-};
-
-const investmentSummarySchema = {
-  type: 'object',
-  properties: {
-    queryType: { type: 'string', enum: ['investment_summary'] },
-    summary: { type: 'string' },
-    totalUSD: { type: 'string' },
-    dealCount: { type: 'number' },
-    byYear: {
-      type: 'array',
-      items: {
-        type: 'object',
-        properties: {
-          year: { type: 'string' },
-          totalUSD: { type: 'string' },
-          dealCount: { type: 'number' },
-        },
-        required: ['year', 'totalUSD', 'dealCount'],
-        additionalProperties: false,
-      },
-    },
-    byCountry: {
-      type: 'array',
-      items: {
-        type: 'object',
-        properties: {
-          country: { type: 'string' },
-          totalUSD: { type: 'string' },
-          dealCount: { type: 'number' },
-        },
-        required: ['country', 'totalUSD', 'dealCount'],
-        additionalProperties: false,
-      },
-    },
-    caveats: { type: 'array', items: { type: 'string' } },
-  },
-  required: ['queryType', 'summary', 'totalUSD', 'dealCount', 'byYear', 'byCountry', 'caveats'],
-  additionalProperties: false,
-};
-
-const countryComparisonSchema = {
-  type: 'object',
-  properties: {
-    queryType: { type: 'string', enum: ['country_comparison'] },
-    summary: { type: 'string' },
-    countries: {
-      type: 'array',
-      items: {
-        type: 'object',
-        properties: {
-          name: { type: 'string' },
-          stats: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: { label: { type: 'string' }, value: { type: 'string' } },
-              required: ['label', 'value'],
-              additionalProperties: false,
-            },
-          },
-        },
-        required: ['name', 'stats'],
-        additionalProperties: false,
-      },
-    },
-    caveats: { type: 'array', items: { type: 'string' } },
-  },
-  required: ['queryType', 'summary', 'countries', 'caveats'],
-  additionalProperties: false,
-};
-
-const singleMetricSchema = {
-  type: 'object',
-  properties: {
-    queryType: { type: 'string', enum: ['single_metric'] },
-    summary: { type: 'string' },
-    value: { type: 'string' },
-    label: { type: 'string' },
-    context: { type: ['string', 'null'] },
-    caveats: { type: 'array', items: { type: 'string' } },
-  },
-  required: ['queryType', 'summary', 'value', 'label', 'context', 'caveats'],
-  additionalProperties: false,
-};
-
-const RESPONSE_SCHEMA = {
-  anyOf: [companyListSchema, investmentSummarySchema, countryComparisonSchema, singleMetricSchema],
-};
-
 const FINALIZE_INSTRUCTION =
   'Give your final answer now, as ONLY valid JSON matching one of the schemas described in the system prompt — no markdown, no prose outside the JSON, no code fences.';
 
@@ -223,7 +90,7 @@ const tools = [
     name: 'search_notion',
     description:
       "Search the connected Notion workspace by keyword. Returns matching pages and databases with their IDs, titles, and object type ('page' or 'database'). Use this first, before query_database or get_page_content, to find the right ID to drill into.",
-    input_schema: {
+    parametersJsonSchema: {
       type: 'object',
       properties: {
         query: {
@@ -238,7 +105,7 @@ const tools = [
     name: 'query_database',
     description:
       'Query a Notion database by ID to get its rows and properties (e.g. all companies in a country, all deals for an investor). Use the database ID returned by search_notion. Returns up to 500 rows.',
-    input_schema: {
+    parametersJsonSchema: {
       type: 'object',
       properties: {
         database_id: {
@@ -258,7 +125,7 @@ const tools = [
     name: 'get_page_content',
     description:
       'Fetch the full text content of a single Notion page by ID, including nested blocks (headings, lists, sub-pages). Use this to read the body of a specific page found via search_notion or a row from query_database.',
-    input_schema: {
+    parametersJsonSchema: {
       type: 'object',
       properties: {
         page_id: {
@@ -285,23 +152,21 @@ async function executeTool(name, input) {
   }
 }
 
-function firstText(content) {
-  return content.find((block) => block.type === 'text')?.text ?? '';
-}
-
-// Makes one extra, tools-free call once the gathering loop is done, with
-// output_config.format enforcing the JSON schema structurally — the system
-// prompt instruction covers *content* (which queryType, what to put in each
-// field), this covers *shape* (guaranteed-parseable JSON), so a malformed
-// response should only happen on a refusal or a max_tokens truncation.
-async function finalizeStructuredAnswer(anthropic, messages) {
-  const finalizeMessages = [...messages, { role: 'user', content: FINALIZE_INSTRUCTION }];
-  return anthropic.messages.create({
+// Makes one extra, tools-free call once the gathering loop is done. Gemini's
+// responseMimeType enforces syntactically-valid JSON (the *shape*); the
+// system prompt instruction covers *content* (which queryType, what to put
+// in each field) — so a malformed response should only happen on a safety
+// block or a max_tokens truncation, which is why the parse-error fallback
+// below stays in place regardless.
+async function finalizeStructuredAnswer(ai, contents) {
+  const finalizeContents = [...contents, { role: 'user', parts: [{ text: FINALIZE_INSTRUCTION }] }];
+  return ai.models.generateContent({
     model: MODEL,
-    max_tokens: 8192,
-    system: SYSTEM_PROMPT,
-    output_config: { format: { type: 'json_schema', schema: RESPONSE_SCHEMA } },
-    messages: finalizeMessages,
+    contents: finalizeContents,
+    config: {
+      systemInstruction: SYSTEM_PROMPT,
+      responseMimeType: 'application/json',
+    },
   });
 }
 
@@ -312,7 +177,8 @@ async function finalizeStructuredAnswer(anthropic, messages) {
 // function logs) so a queryType that's prone to breaking schema can be
 // spotted and the prompt adjusted.
 function sendStructured(res, response, toolCalls, capped = false) {
-  const raw = firstText(response.content);
+  const raw = response.text ?? '';
+  const finishReason = response.candidates?.[0]?.finishReason;
   let result = null;
   let parseError = null;
   try {
@@ -320,14 +186,14 @@ function sendStructured(res, response, toolCalls, capped = false) {
   } catch (err) {
     parseError = err.message;
   }
-  if (!result && response.stop_reason === 'refusal') {
-    parseError = parseError || 'Model refused to answer';
+  if (!result && finishReason && finishReason !== 'STOP') {
+    parseError = parseError || `Model stopped with reason: ${finishReason}`;
   }
   if (parseError) {
     console.error('[chat] malformed structured response', {
       toolCalls,
       capped,
-      stopReason: response.stop_reason,
+      finishReason,
       parseError,
       raw,
     });
@@ -348,8 +214,8 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  if (!process.env.ANTHROPIC_API_KEY) {
-    return res.status(500).json({ error: 'ANTHROPIC_API_KEY is not configured' });
+  if (!process.env.GEMINI_API_KEY) {
+    return res.status(500).json({ error: 'GEMINI_API_KEY is not configured' });
   }
 
   const { question } = req.body || {};
@@ -357,57 +223,56 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Missing "question" string in request body' });
   }
 
-  const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-  const messages = [{ role: 'user', content: question }];
+  const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+  let contents = [{ role: 'user', parts: [{ text: question }] }];
 
   try {
     for (let turn = 0; turn < MAX_TOOL_CALLS; turn++) {
-      const response = await anthropic.messages.create({
+      const response = await ai.models.generateContent({
         model: MODEL,
-        max_tokens: 4096,
-        system: SYSTEM_PROMPT,
-        tools,
-        messages,
+        contents,
+        config: {
+          systemInstruction: SYSTEM_PROMPT,
+          tools: [{ functionDeclarations: tools }],
+        },
       });
 
-      messages.push({ role: 'assistant', content: response.content });
+      const modelContent = response.candidates?.[0]?.content;
+      if (modelContent) contents.push(modelContent);
 
-      if (response.stop_reason !== 'tool_use') {
-        const finalResponse = await finalizeStructuredAnswer(anthropic, messages);
+      const functionCalls = response.functionCalls;
+      if (!functionCalls || functionCalls.length === 0) {
+        const finalResponse = await finalizeStructuredAnswer(ai, contents);
         return sendStructured(res, finalResponse, turn);
       }
 
-      const toolUseBlocks = response.content.filter((block) => block.type === 'tool_use');
-      const toolResults = [];
-      for (const block of toolUseBlocks) {
+      const responseParts = [];
+      for (const call of functionCalls) {
         try {
-          const result = await executeTool(block.name, block.input);
-          toolResults.push({
-            type: 'tool_result',
-            tool_use_id: block.id,
-            content: JSON.stringify(result),
+          const result = await executeTool(call.name, call.args);
+          responseParts.push({
+            functionResponse: { id: call.id, name: call.name, response: { output: result } },
           });
         } catch (err) {
-          console.error(`[chat] tool_error: ${block.name}`, err);
-          toolResults.push({
-            type: 'tool_result',
-            tool_use_id: block.id,
-            content: `Error: ${err.message}`,
-            is_error: true,
+          console.error(`[chat] tool_error: ${call.name}`, err);
+          responseParts.push({
+            functionResponse: { id: call.id, name: call.name, response: { error: err.message } },
           });
         }
       }
-      messages.push({ role: 'user', content: toolResults });
+      contents.push({ role: 'user', parts: responseParts });
     }
 
     // Hit the tool-call cap — ask for a final answer from what's gathered
     // so far instead of just cutting the user off.
     console.warn(`[chat] hit MAX_TOOL_CALLS (${MAX_TOOL_CALLS}) — requesting final answer`);
-    messages.push({
+    contents.push({
       role: 'user',
-      content: 'You have reached the maximum number of tool calls for this question. Answer now using only the information already gathered, and note in "caveats" that the search was cut short.',
+      parts: [{
+        text: 'You have reached the maximum number of tool calls for this question. Answer now using only the information already gathered, and note in "caveats" that the search was cut short.',
+      }],
     });
-    const finalResponse = await finalizeStructuredAnswer(anthropic, messages);
+    const finalResponse = await finalizeStructuredAnswer(ai, contents);
     return sendStructured(res, finalResponse, MAX_TOOL_CALLS, true);
   } catch (err) {
     console.error('[chat] error', err);

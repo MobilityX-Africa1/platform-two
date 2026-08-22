@@ -22,7 +22,7 @@ Three "pillars" (not tabs — a user can enter from any one and cross-link to th
   instruments, and focus areas.
 
 A floating chat widget lets a user ask free-form questions ("which Kenyan companies raised
-a Series A in 2025?") answered by an agentic Claude loop that searches and reads the same
+a Series A in 2025?") answered by an agentic Gemini loop that searches and reads the same
 Notion workspace live — see [§4](#4-the-notion-connection).
 
 Everything the public site shows is sourced from Notion at request time (5-minute cache).
@@ -58,7 +58,7 @@ dist/                built static output (checked in from the last build)
 | Var | Used by | Purpose |
 |---|---|---|
 | `NOTION_TOKEN` | `backend/api/notion.js`, `backend/api/_lib/notionTools.js` | Notion integration token, read access to the workspace |
-| `ANTHROPIC_API_KEY` | `backend/api/chat.js` | Powers the chat assistant (Claude, currently `claude-opus-5`) |
+| `GEMINI_API_KEY` | `backend/api/chat.js` | Powers the chat assistant (Gemini, currently `gemini-3.6-flash`) |
 | `VITE_MAPBOX_TOKEN` | frontend (build-time) | Map rendering |
 
 Set these in Vercel project settings for deployed environments; locally via `.env` +
@@ -119,7 +119,7 @@ Two separate integrations talk to Notion, for two different purposes:
    against a fixed data-source ID, filtered through `PUBLIC_FIELDS`, cached 5 minutes
    in-memory (serverless warm-instance cache; add `?fresh=1` to bypass it).
 2. **`backend/api/chat.js` + `backend/api/_lib/notionTools.js`** — the AI assistant. This
-   is an agentic loop (`claude-opus-5`, up to 8 tool-call turns) that gives Claude three
+   is an agentic loop (`gemini-3.6-flash`, up to 8 tool-call turns) that gives Gemini three
    tools — `search_notion`, `query_database`, `get_page_content` — and lets it decide what
    to look up per question, rather than the app pre-fetching everything. It has no
    built-in knowledge of the workspace; every answer is grounded in a live lookup, and the
@@ -244,7 +244,7 @@ VS Code launch config at `.claude/launch.json` runs `npm run dev` on port 5173.
 
 Deployed on Vercel. `vercel.json` rewrites everything except `/api/*` to `index.html`
 (SPA client-side routing). Vercel auto-detects the top-level `api/` folder as serverless
-functions — see the shim note in §2. Set `NOTION_TOKEN`, `ANTHROPIC_API_KEY`, and
+functions — see the shim note in §2. Set `NOTION_TOKEN`, `GEMINI_API_KEY`, and
 `VITE_MAPBOX_TOKEN` as Vercel environment variables before deploying.
 
 `dist/` is checked into the repo as the last built output — regenerate with `npm run

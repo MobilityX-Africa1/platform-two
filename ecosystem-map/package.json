@@ -12,7 +12,7 @@
     "screenshot": "node frontend/scripts/screenshot.mjs"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.115.0",
+    "@google/genai": "^2.18.0",
     "@notionhq/client": "^2.2.15",
     "date-fns": "^4.4.0",
     "lucide-react": "^1.23.0",

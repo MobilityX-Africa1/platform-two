@@ -260,3 +260,12 @@ Companies by stage    = COUNT grouped by Company Stage (display-stripped, see §
 - [ ] **Show both fields in every "duplicate-looking" pair — never merge or delete (§7)**
 - [ ] Add the Asset Economics database and build its Country-page section (§8, and see COWORK_PAGE_REVAMP.md)
 - [ ] Never fetch or render the internal-only field list (§4, §5, §7)
+
+---
+
+## Note: AI query provider switch (unrelated to the Notion migration above)
+
+AI query provider: Gemini (`GEMINI_API_KEY`), not Anthropic. Switched August 2026 due to an
+Anthropic account billing issue; this is a permanent decision, not a temporary workaround —
+don't reintroduce Anthropic/Claude references for this feature. See `backend/api/chat.js`
+and README.md §2/§4.
