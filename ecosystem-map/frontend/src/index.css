@@ -324,6 +324,15 @@ body.has-back-button .page-header {
 .breadcrumb-link:focus-visible { outline: 2px solid var(--plum); outline-offset: 2px; }
 .breadcrumb-link:active { transform: scale(0.97); }
 
+/* Pages whose header is a self-contained band (.entity-hero) rather than the
+   sticky .page-header don't need the pill to float — letting it scroll away
+   with the content reclaims the ~80px the sticky version has to reserve
+   above the title for its own float clearance. */
+.breadcrumb-link-flush {
+  position: static;
+  margin: 0;
+}
+
 /* ---------- left panel: header ---------- */
 
 .brand-header {
@@ -955,6 +964,174 @@ body.has-back-button .page-header {
 .section-title {
   font-size: var(--text-md);
   margin-bottom: var(--space-3);
+}
+
+/* ---------- entity hero (company / detail identity band) ----------
+   One band that carries everything an analyst needs to place the entity:
+   identity on the left, standing (score + the three ranking pillars) on the
+   right. Replaces the old stacked title block + floating score card + a
+   separate "Score breakdown" section — three scattered blocks fused into one
+   so the top of the page reads in a single glance instead of a full scroll. */
+
+.entity-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-4);
+  padding: var(--space-5);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+.entity-hero-id {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.entity-hero-title-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+.entity-hero-title-row h1 { font-size: var(--text-2xl); }
+
+.entity-hero-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-2);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--muted);
+}
+.entity-hero-meta .sep { color: var(--border-strong, var(--border)); }
+.entity-hero-meta-country {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-2);
+  font-weight: 600;
+}
+.entity-hero-meta-country:hover { color: var(--plum); }
+.entity-hero-meta-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--plum);
+  font-weight: 600;
+}
+
+.entity-hero-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+/* One-line pitch that sits inside the identity band (allocator profile) —
+   quieter than body copy so the name and chips still lead. */
+.entity-hero-summary {
+  margin: 0;
+  max-width: 70ch;
+  font-size: var(--text-sm);
+  line-height: 1.6;
+  color: var(--text-2);
+}
+
+/* right rail — score cluster + pillar meters */
+.entity-hero-score {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-3) var(--space-4);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--border);
+}
+
+.entity-hero-score-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.entity-hero-score-badge .eyebrow {
+  font-size: 9px;
+  letter-spacing: 0.06em;
+}
+.entity-hero-score-rank {
+  margin-top: 2px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: var(--text-sm);
+  color: var(--plum);
+  white-space: nowrap;
+}
+
+.entity-hero-meters {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+}
+.entity-hero-meter {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.entity-hero-meter-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+.entity-hero-meter-label {
+  overflow: hidden;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.entity-hero-meter-value {
+  flex-shrink: 0;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--text-xs);
+  font-weight: 700;
+  color: var(--ink);
+}
+.entity-hero-meter-value span { color: var(--muted); font-weight: 400; }
+.entity-hero-meter-track {
+  height: 4px;
+  border-radius: var(--radius-full);
+  background: var(--plum-bg);
+  overflow: hidden;
+}
+.entity-hero-meter-fill {
+  display: block;
+  height: 100%;
+  border-radius: var(--radius-full);
+}
+.entity-hero-meter-fill--plum { background: var(--plum); }
+.entity-hero-meter-fill--sky  { background: var(--sky-dark); }
+.entity-hero-meter-fill--leaf { background: var(--leaf-dark); }
+
+@media (min-width: 900px) {
+  .entity-hero-scored {
+    grid-template-columns: minmax(0, 1fr) 320px;
+    column-gap: var(--space-6);
+    align-items: start;
+  }
+  .entity-hero-scored .entity-hero-score {
+    padding-top: 0;
+    padding-left: var(--space-6);
+    border-top: none;
+    border-left: 1px solid var(--border);
+  }
 }
 
 /* ---------- metric cards ---------- */
@@ -1736,6 +1913,32 @@ tr:last-child td { border-bottom: none; }
 .section-table td.section-table-chip-cell { font-family: var(--font-sans); }
 .section-table tbody tr:nth-child(even) td { background: var(--row-alt); }
 .section-table tbody tr:last-child td { border-bottom: none; }
+
+/* Label → chips variant (allocator "Investment profile"): the value cell
+   holds wrapped chips, not a figure, so it reads left-aligned in the UI font
+   rather than right-aligned tabular. Row label stays a tight fixed column. */
+.profile-fields .section-table td { vertical-align: top; }
+.profile-fields .section-table td:first-child {
+  width: 1%;
+  padding-right: var(--space-6);
+  white-space: nowrap;
+  font-weight: 600;
+  color: var(--muted);
+}
+.profile-fields .section-table td:not(:first-child) {
+  text-align: left;
+  font-family: var(--font-sans);
+}
+.profile-fields .section-table .chip svg { flex-shrink: 0; }
+
+/* Wrapping chip collection (profile values, market-company cloud) — one
+   consistent 6px gap, never the wider --row gap. */
+.chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 0;
+}
 
 /* ---------- asset economics: market comparison table + detail page ----------
    Scoped local tokens rather than the global --plum theme — this feature's
