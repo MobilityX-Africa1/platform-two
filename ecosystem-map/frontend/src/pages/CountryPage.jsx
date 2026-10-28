@@ -306,11 +306,11 @@ export function CountryPage() {
                   <tbody>
                     {group.companies.map((c) => (
                       <Row key={c.id} to={`/company/${c.id}`}>
-                        <td className="data-table-name">
+                        <td><div className="data-table-name">
                           <RankBadge rank={c.rankingOrder} />
                           <CompanyLogo name={c.name} website={c.website} size={24} />
                           <span>{c.name}</span>
-                        </td>
+                        </div></td>
                         <td className="data-table-chip-cell">
                           {c.stage && <span className="chip chip-neutral">{displayStage(c.stage)}</span>}
                         </td>
@@ -335,10 +335,10 @@ export function CountryPage() {
               <tbody>
                 {activeAllocators.map((a) => (
                   <Row key={a.id} to={`/allocator/${a.id}`}>
-                    <td className="data-table-name">
+                    <td><div className="data-table-name">
                       <CompanyLogo name={a.name} website={a.website} size={28} />
                       <span>{a.name}</span>
-                    </td>
+                    </div></td>
                     <td className="data-table-chip-cell">
                       <span className="chip chip-neutral">{a.typeOfInvestor}</span>
                     </td>

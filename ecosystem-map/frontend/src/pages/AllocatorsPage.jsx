@@ -103,11 +103,11 @@ export function AllocatorsPage() {
               const textShade = violetTextShade(t);
               return (
                 <Row key={a.id} to={`/allocator/${a.id}`}>
-                  <td className="data-table-name">
+                  <td><div className="data-table-name">
                     <CompanyLogo name={a.name} website={a.website} size={24} />
                     <span>{a.name}</span>
                     {a.aMINMember && <span className="chip chip-upstream">AMIN</span>}
-                  </td>
+                  </div></td>
                   <td className="muted">
                     {(a.geo || []).slice(0, 2).join(', ')}
                     {(a.geo || []).length > 2 ? ` +${a.geo.length - 2}` : ''}

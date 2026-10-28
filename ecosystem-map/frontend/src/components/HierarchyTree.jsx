@@ -3,7 +3,25 @@ import { Globe2, Building2, Landmark, Coins, Handshake, GitCompare } from 'lucid
 import { useNotionData } from '../hooks/useNotionData';
 import { TreeSkeleton } from './Skeletons';
 
-export function HierarchyTree() {
+// One nav entry. In the collapsed icon rail (`compact`) only the icon is
+// drawn, so the label moves to aria-label/title to keep every link named for
+// screen readers and discoverable on hover.
+function NavItem({ to, icon, label, count, compact }) {
+  return (
+    <NavLink
+      to={to}
+      className={({ isActive }) => `tree-row${isActive ? ' active' : ''}`}
+      title={compact ? label : undefined}
+      aria-label={compact ? label : undefined}
+    >
+      {icon}
+      {!compact && <span>{label}</span>}
+      {!compact && count != null && <span className="count">{count}</span>}
+    </NavLink>
+  );
+}
+
+export function HierarchyTree({ compact = false }) {
   const { companies, countries, allocators, deals, economics, status } = useNotionData();
 
   if (status === 'loading' || status === 'idle') return <TreeSkeleton />;
@@ -16,45 +34,52 @@ export function HierarchyTree() {
   return (
     <div className="stack" style={{ gap: 4 }}>
       <div className="tree-node">
-        <NavLink to="/countries" className={({ isActive }) => `tree-row${isActive ? ' active' : ''}`}>
-          <Globe2 size={14} className="nav-icon nav-icon--sky" />
-          <span>Countries</span>
-          <span className="count">{publishedCountryCount}</span>
-        </NavLink>
+        <NavItem
+          to="/countries"
+          icon={<Globe2 size={14} className="nav-icon nav-icon--sky" />}
+          label="Countries"
+          count={publishedCountryCount}
+          compact={compact}
+        />
         <div className="tree-children">
-          <NavLink to="/compare" className={({ isActive }) => `tree-row${isActive ? ' active' : ''}`}>
-            <GitCompare size={14} />
-            <span>Compare countries</span>
-          </NavLink>
+          <NavItem to="/compare" icon={<GitCompare size={14} />} label="Compare countries" compact={compact} />
         </div>
       </div>
 
-      <NavLink to="/companies" className={({ isActive }) => `tree-row${isActive ? ' active' : ''}`}>
-        <Building2 size={14} className="nav-icon nav-icon--plum" />
-        <span>Companies</span>
-        <span className="count">{companies.length}</span>
-      </NavLink>
+      <NavItem
+        to="/companies"
+        icon={<Building2 size={14} className="nav-icon nav-icon--plum" />}
+        label="Companies"
+        count={companies.length}
+        compact={compact}
+      />
 
       <div className="tree-node">
-        <NavLink to="/allocators" className={({ isActive }) => `tree-row${isActive ? ' active' : ''}`}>
-          <Landmark size={14} className="nav-icon nav-icon--leaf" />
-          <span>Capital Allocators</span>
-          <span className="count">{allocators.length}</span>
-        </NavLink>
+        <NavItem
+          to="/allocators"
+          icon={<Landmark size={14} className="nav-icon nav-icon--leaf" />}
+          label="Capital Allocators"
+          count={allocators.length}
+          compact={compact}
+        />
         <div className="tree-children">
-          <NavLink to="/deals" className={({ isActive }) => `tree-row${isActive ? ' active' : ''}`}>
-            <Handshake size={14} />
-            <span>Deals Tracked</span>
-            <span className="count">{deals.length}</span>
-          </NavLink>
+          <NavItem
+            to="/deals"
+            icon={<Handshake size={14} />}
+            label="Deals Tracked"
+            count={deals.length}
+            compact={compact}
+          />
         </div>
       </div>
 
-      <NavLink to="/asset-economics" className={({ isActive }) => `tree-row${isActive ? ' active' : ''}`}>
-        <Coins size={14} className="nav-icon nav-icon--coral" />
-        <span>Asset Economics</span>
-        <span className="count">{economics.length}</span>
-      </NavLink>
+      <NavItem
+        to="/asset-economics"
+        icon={<Coins size={14} className="nav-icon nav-icon--coral" />}
+        label="Asset Economics"
+        count={economics.length}
+        compact={compact}
+      />
     </div>
   );
 }

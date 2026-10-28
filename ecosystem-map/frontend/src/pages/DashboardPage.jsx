@@ -30,8 +30,14 @@ const STAGE_ABBR = {
 };
 
 function formatDelta(amountM) {
+  if (!amountM) return 'None recorded this qtr';
   const sign = amountM > 0 ? '+' : '';
   return `${sign}${formatUSDM(amountM)} this qtr`;
+}
+
+function deltaTrendOf(amountM) {
+  if (!amountM) return 'flat';
+  return amountM > 0 ? 'up' : 'down';
 }
 
 export function DashboardPage() {
@@ -95,7 +101,7 @@ export function DashboardPage() {
           label="Total investment tracked"
           value={formatUSDM(stats.totalRaisedM)}
           delta={formatDelta(stats.investmentThisQuarterM)}
-          deltaTrend={stats.investmentThisQuarterM >= 0 ? 'up' : 'down'}
+          deltaTrend={deltaTrendOf(stats.investmentThisQuarterM)}
           to="/deals"
           icon={TrendingUp}
           accent="leaf"
@@ -175,7 +181,8 @@ export function DashboardPage() {
         <div className="dashboard-top-grid-cell">
           <div className="row" style={{ justifyContent: 'space-between', alignItems: 'baseline' }}>
             <h2 className="section-title">Top 5 leaderboard</h2>
-            <span className="muted" style={{ fontSize: 'var(--text-xs)' }}>by capital raised</span>
+            {/* Ordered by Notion's "Ranking order" (the Top 50 rank) in useStats — not by amount raised. */}
+            <span className="muted" style={{ fontSize: 'var(--text-xs)' }}>by Top 50 rank</span>
           </div>
           {stats.leaderboard.length === 0 ? (
             <div className="card" style={{ padding: 8 }}>
@@ -187,11 +194,11 @@ export function DashboardPage() {
                 <tbody>
                   {stats.leaderboard.map((c) => (
                     <Row key={c.id} to={`/company/${c.id}`}>
-                      <td className="data-table-name">
+                      <td><div className="data-table-name">
                         <RankBadge rank={c.rankingOrder} />
                         <CompanyLogo name={c.name} website={c.website} size={26} />
                         <span>{c.name}</span>
-                      </td>
+                      </div></td>
                       <td className="data-table-num-cell">{formatUSDM(c.totalFundingRaisedM)}</td>
                       <td className="data-table-chip-cell">
                         {c.stage && <span className="chip chip-neutral">{displayStage(c.stage)}</span>}

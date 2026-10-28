@@ -119,11 +119,11 @@ export function CompaniesPage() {
               const textShade = violetTextShade(t);
               return (
                 <Row key={c.id} to={`/company/${c.id}`}>
-                  <td className="data-table-name">
+                  <td><div className="data-table-name">
                     <RankBadge rank={c.rankingOrder} />
                     <CompanyLogo name={c.name} website={c.website} size={24} />
                     <span>{c.name}</span>
-                  </td>
+                  </div></td>
                   <td>
                     {(c.vertical || []).length > 0 && (
                       <span className="row" style={{ gap: 4 }}>

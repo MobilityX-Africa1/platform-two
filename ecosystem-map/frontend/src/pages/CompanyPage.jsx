@@ -206,10 +206,10 @@ export function CompanyPage() {
               <tbody>
                 {investors.map((a) => (
                   <Row key={a.id} to={`/allocator/${a.id}`}>
-                    <td className="data-table-name">
+                    <td><div className="data-table-name">
                       <CompanyLogo name={a.name} website={a.website} size={28} />
                       <span>{a.name}</span>
-                    </td>
+                    </div></td>
                     <td className="data-table-chip-cell">
                       <span className="chip chip-neutral">{a.typeOfInvestor}</span>
                     </td>
@@ -233,10 +233,10 @@ export function CompanyPage() {
               <tbody>
                 {company.marketAllocators.map((a) => (
                   <Row key={a.id} to={`/allocator/${a.id}`}>
-                    <td className="data-table-name">
+                    <td><div className="data-table-name">
                       <CompanyLogo name={a.name} website={a.website} size={28} />
                       <span>{a.name}</span>
-                    </td>
+                    </div></td>
                     <td className="data-table-chip-cell">
                       <span className="chip chip-neutral">{a.typeOfInvestor}</span>
                     </td>

@@ -24,7 +24,7 @@ export function InvestmentSummaryResult({ result }) {
               <tbody>
                 {byYear.map((row) => (
                   <tr key={row.year}>
-                    <td className="data-table-name"><span>{row.year}</span></td>
+                    <td><div className="data-table-name"><span>{row.year}</span></div></td>
                     <td className="muted" style={{ fontSize: 'var(--text-sm)' }}>{formatCount(row.dealCount)}</td>
                     <td className="data-table-num-cell"><span style={{ fontWeight: 700 }}>{row.totalUSD}</span></td>
                   </tr>
@@ -43,10 +43,10 @@ export function InvestmentSummaryResult({ result }) {
               <tbody>
                 {byCountry.map((row) => (
                   <tr key={row.country}>
-                    <td className="data-table-name">
+                    <td><div className="data-table-name">
                       <CountryFlag name={row.country} size={14} />
                       <span>{row.country}</span>
-                    </td>
+                    </div></td>
                     <td className="muted" style={{ fontSize: 'var(--text-sm)' }}>{formatCount(row.dealCount)}</td>
                     <td className="data-table-num-cell"><span style={{ fontWeight: 700 }}>{row.totalUSD}</span></td>
                   </tr>

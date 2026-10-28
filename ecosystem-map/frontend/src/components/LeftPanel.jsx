@@ -1,5 +1,6 @@
 import { useCallback, useRef, useState } from 'react';
 import { NavLink } from 'react-router-dom';
+import { Menu, PanelLeftClose } from 'lucide-react';
 import { StatusBar } from './StatusBar';
 import { HierarchyTree } from './HierarchyTree';
 
@@ -13,7 +14,7 @@ function clampWidth(value) {
   return Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, value));
 }
 
-export function LeftPanel({ collapsed }) {
+export function LeftPanel({ collapsed, drawerOpen = false, onToggleDrawer, toggleRef }) {
   const [width, setWidth] = useState(() => {
     if (typeof window === 'undefined') return DEFAULT_WIDTH;
     const stored = Number(window.localStorage.getItem(STORAGE_KEY));
@@ -56,16 +57,35 @@ export function LeftPanel({ collapsed }) {
     window.localStorage.setItem(STORAGE_KEY, String(DEFAULT_WIDTH));
   }, []);
 
+  // On narrow screens the panel is an icon rail (`collapsed`); the toggle
+  // opens it as a full-width overlay drawer with labels and counts.
+  const compact = collapsed && !drawerOpen;
+  const ToggleIcon = drawerOpen ? PanelLeftClose : Menu;
+
   return (
     <div
-      className={`left-panel${collapsed ? ' collapsed' : ''}${resizing ? ' resizing' : ''}`}
+      id="left-panel"
+      className={`left-panel${compact ? ' collapsed' : ''}${collapsed && drawerOpen ? ' drawer-open' : ''}${resizing ? ' resizing' : ''}`}
       style={collapsed ? undefined : { flexBasis: width, maxWidth: width, minWidth: width }}
     >
       <div className="brand-header">
         <div className="brand-header-row">
-          <img src="/logo_x.avif" alt="Company logo" className="brand-logo" />
+          <img src="/logo_x.avif" alt="MobilityX Africa" className="brand-logo" />
+          {collapsed && (
+            <button
+              type="button"
+              className="sidebar-toggle"
+              onClick={onToggleDrawer}
+              aria-expanded={drawerOpen}
+              aria-controls="left-panel"
+              aria-label={drawerOpen ? 'Close navigation' : 'Open navigation'}
+              ref={toggleRef}
+            >
+              <ToggleIcon size={18} />
+            </button>
+          )}
         </div>
-        {!collapsed && <StatusBar />}
+        {!compact && <StatusBar />}
       </div>
 
       <div className="left-panel-scroll">
@@ -75,17 +95,14 @@ export function LeftPanel({ collapsed }) {
           className={({ isActive }) => `tree-row${isActive ? ' active' : ''}`}
           style={{ marginBottom: 'var(--space-3)' }}
           title="Dashboard"
+          aria-label={compact ? 'Dashboard' : undefined}
         >
-          <span className="material-icons" style={{ fontSize: 14 }}>dashboard</span>
-          {!collapsed && <span>Dashboard</span>}
+          <span className="material-icons" style={{ fontSize: 14 }} aria-hidden="true">dashboard</span>
+          {!compact && <span>Dashboard</span>}
         </NavLink>
 
-        {!collapsed && (
-          <>
-            <div className="panel-section-title">Ecosystem</div>
-            <HierarchyTree />
-          </>
-        )}
+        {!compact && <div className="panel-section-title">Ecosystem</div>}
+        <HierarchyTree compact={compact} />
       </div>
 
       {!collapsed && (

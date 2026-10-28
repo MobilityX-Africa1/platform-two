@@ -10,13 +10,13 @@ function CompanyRow({ company }) {
   const inactive = isInactiveStatus(company.status);
   const cells = (
     <>
-      <td className="data-table-name">
+      <td><div className="data-table-name">
         <RankBadge rank={company.rank} />
         <CompanyLogo name={company.name} size={24} />
         <span style={inactive ? { textDecoration: 'line-through', color: 'var(--muted)' } : undefined}>
           {company.name}
         </span>
-      </td>
+      </div></td>
       <td>
         <span className="row" style={{ gap: 6, flexWrap: 'wrap' }}>
           {company.vertical && <span className="chip chip-neutral">{company.vertical}</span>}

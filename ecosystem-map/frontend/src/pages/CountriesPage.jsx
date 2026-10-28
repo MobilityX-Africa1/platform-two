@@ -64,10 +64,10 @@ export function CountriesPage() {
                     const textShade = violetTextShade(t);
                     return (
                       <Row key={country.id} to={`/country/${country.id}`}>
-                        <td className="data-table-name">
+                        <td><div className="data-table-name">
                           <CountryFlag name={country.name} size={18} />
                           <span>{country.name}</span>
-                        </td>
+                        </div></td>
                         <td>
                           {country.dominantVehicleCategory && (
                             <span className="chip chip-neutral">{country.dominantVehicleCategory}</span>

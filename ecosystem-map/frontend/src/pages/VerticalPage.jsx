@@ -59,10 +59,10 @@ export function VerticalPage() {
             <tbody>
               {verticalCompanies.map((c) => (
                 <Row key={c.id} to={`/company/${c.id}`}>
-                  <td className="data-table-name">
+                  <td><div className="data-table-name">
                     <RankBadge rank={c.rankingOrder} />
                     <span>{c.name}</span>
-                  </td>
+                  </div></td>
                   <td className="data-table-chip-cell">
                     {c.stage && <span className="chip chip-neutral">{displayStage(c.stage)}</span>}
                   </td>

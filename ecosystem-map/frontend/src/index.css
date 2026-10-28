@@ -21,6 +21,26 @@
      chip/badge fills. Replaces an old off-brand blue that didn't tie back to
      the plum identity anywhere else in the UI. */
   --hover-tint: #EEE3EE;
+  /* Emphasis hairline (separators, hover borders) — a plum-leaning grey so it
+     sits in the same family as --hover-tint rather than a neutral cool grey. */
+  --border-strong: #CFCBD0;
+  /* Neutral chips fill with --plum-bg, which is within 1% luminance of
+     --row-alt — on a striped row the fill alone vanishes. A hairline ring in
+     the same plum keeps the chip's shape readable on any row background. */
+  --chip-ring: color-mix(in srgb, var(--plum) 14%, transparent);
+
+  /* Elevation — always two layers, the outer one tinted with the brand plum
+     instead of flat black. Level 1 in-flow cards, 2 raised panels, 3 floating
+     surfaces (popovers, chat panel). */
+  --shadow-xs: 0 1px 2px rgba(13, 13, 13, 0.04), 0 1px 3px rgba(67, 40, 70, 0.05);
+  --shadow-raised: 0 4px 8px rgba(13, 13, 13, 0.06), 0 12px 32px rgba(67, 40, 70, 0.10);
+  --shadow-float: 0 8px 16px rgba(13, 13, 13, 0.08), 0 24px 64px rgba(67, 40, 70, 0.14);
+
+  /* Interaction — the spring is the existing press/hover curve used across
+     the app; --ease-out is for things entering the screen. */
+  --focus-ring-color: var(--plum);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
 
   --font-display: 'Google Sans', 'Roboto', system-ui, sans-serif;
   --font-sans: 'Roboto', system-ui, sans-serif;
@@ -99,6 +119,23 @@ button {
 }
 
 a { color: inherit; text-decoration: none; }
+
+/* Baseline keyboard focus for anything interactive that doesn't define its
+   own ring. :where() keeps this at zero specificity, so every component's
+   explicit :focus-visible rule below still wins. */
+:where(a, button, input, select, textarea, summary, [role="link"], [role="button"], [tabindex]):focus-visible {
+  outline: 2px solid var(--focus-ring-color);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
 
 .num {
   font-family: var(--font-mono);
@@ -207,7 +244,50 @@ a { color: inherit; text-decoration: none; }
   justify-content: center;
   padding-left: var(--space-2);
   padding-right: var(--space-2);
+  min-height: 40px;
 }
+/* Icon-only rows need a larger glyph than the 14px used beside a label. */
+.left-panel.collapsed .tree-row svg { width: 18px; height: 18px; }
+.left-panel.collapsed .tree-row .material-icons { font-size: 18px !important; }
+/* In the icon rail, sub-pages (Compare, Deals) sit as plain peers — the
+   indented tree guide only makes sense next to text labels. */
+.left-panel.collapsed .tree-children {
+  margin-left: 0;
+  border-left: none;
+  padding-left: 0;
+}
+
+/* Narrow screens: the rail opens as an overlay drawer over the content.
+   Absolutely positioned inside .app-shell (not fixed), with a placeholder
+   holding the rail's width so the page underneath doesn't shift. */
+.left-panel-placeholder { flex: 0 0 64px; }
+
+.left-panel.drawer-open {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  z-index: 50;
+  flex: none;
+  width: min(280px, 86vw);
+  max-width: none;
+  min-width: 0;
+  box-shadow: var(--shadow-float);
+  animation: drawer-in 0.22s var(--ease-out);
+}
+@keyframes drawer-in {
+  from { transform: translateX(-16px); opacity: 0.6; }
+  to { transform: none; opacity: 1; }
+}
+
+.left-panel-scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 45;
+  background: rgba(47, 28, 49, 0.32);
+  animation: scrim-in 0.2s var(--ease-out);
+}
+@keyframes scrim-in { from { opacity: 0; } to { opacity: 1; } }
 
 .right-panel {
   position: relative;
@@ -217,6 +297,14 @@ a { color: inherit; text-decoration: none; }
   height: 100%;
   overflow-y: auto;
   background: transparent;
+  /* Keyboard focus must never land underneath the sticky .page-header
+     (WCAG 2.2 "Focus Not Obscured") — reserve its height when the browser
+     scrolls a focused row into view. */
+  scroll-padding-top: 96px;
+}
+/* The header wraps title + search onto extra lines on phones (up to ~140px). */
+@media (max-width: 640px) {
+  .right-panel { scroll-padding-top: 156px; }
 }
 
 .right-panel-inner {
@@ -634,7 +722,7 @@ body.has-back-button .page-header {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  box-shadow: var(--shadow-float, 0 8px 16px rgba(13,13,13,0.08), 0 24px 64px rgba(67,40,70,0.12));
+  box-shadow: var(--shadow-float);
   z-index: 30;
   transform-origin: top right;
   animation: filters-pop-in 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -874,6 +962,7 @@ body.has-back-button .page-header {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  box-shadow: var(--shadow-raised);
   transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.15s ease;
 }
 .floating-chat-fab:hover { background: var(--plum-dark); }
@@ -908,7 +997,9 @@ body.has-back-button .page-header {
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   overflow: hidden;
-  animation: floating-chat-in 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: var(--shadow-float);
+  transform-origin: bottom right;
+  animation: floating-chat-in 0.18s var(--ease-out);
 }
 @keyframes floating-chat-in {
   from { opacity: 0; transform: translateY(8px) scale(0.98); }
@@ -950,6 +1041,7 @@ body.has-back-button .page-header {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
+  box-shadow: var(--shadow-xs);
 }
 
 .recharts-surface:focus,
@@ -1231,6 +1323,8 @@ body.has-back-button .page-header {
 }
 .metric-delta-pill--up { background: var(--leaf-bg); color: var(--leaf-dark); }
 .metric-delta-pill--down { background: var(--coral-bg); color: var(--coral-dark); }
+/* No change in the period — neither a gain nor a loss, so no trend colour. */
+.metric-delta-pill--flat { background: var(--bg); color: var(--muted); box-shadow: inset 0 0 0 1px var(--border); }
 
 /* Fill bar for MetricCard's optional `progress` prop — a metric that's
    itself "X out of a max" (a score pillar out of its point cap) reads
@@ -1307,7 +1401,14 @@ body.has-back-button .page-header {
 .chip-upstream { background: var(--leaf-bg); color: var(--leaf-dark); }
 .chip-downstream { background: var(--sky-bg); color: var(--sky-dark); }
 .chip-cross-ecosystem { background: var(--coral-bg); color: var(--coral-dark); }
-.chip-neutral { background: var(--plum-bg); color: var(--plum-dark); }
+.chip-neutral {
+  background: var(--plum-bg);
+  color: var(--plum-dark);
+  box-shadow: inset 0 0 0 1px var(--chip-ring);
+}
+/* A chip rendered for a missing value (e.g. an allocator with no investor
+   type) has no text — don't paint an empty pill for it. */
+.chip:empty { display: none; }
 
 .rank-badge {
   display: inline-flex;
@@ -1322,9 +1423,12 @@ body.has-back-button .page-header {
   font-size: var(--text-sm);
   background: var(--plum-bg);
   color: var(--plum);
+  box-shadow: inset 0 0 0 1px var(--chip-ring);
 }
-.rank-badge.top { background: var(--plum); color: #fff; }
-.rank-badge.rank-badge-1 { background: var(--coral); }
+.rank-badge.top { background: var(--plum); color: #fff; box-shadow: none; }
+/* #1 keeps the coral it's known by, but with plum-dark text — white on coral
+   is only 1.99:1, well under WCAG AA. */
+.rank-badge.rank-badge-1 { background: var(--coral); color: var(--plum-dark); }
 .rank-badge.rank-badge-2 { background: var(--sky-dark); }
 .rank-badge.rank-badge-3 { background: var(--leaf-dark); }
 
@@ -1337,6 +1441,7 @@ body.has-back-button .page-header {
   font-weight: 600;
   background: var(--plum-bg);
   color: var(--plum-dark);
+  box-shadow: inset 0 0 0 1px var(--chip-ring);
 }
 
 /* ---------- lists / tables ---------- */
@@ -1349,14 +1454,17 @@ body.has-back-button .page-header {
   gap: var(--space-3);
   padding: var(--space-2) var(--space-4);
   border-radius: 0;
-  transition: background 0.15s ease, transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: background 0.15s ease, transform 0.15s var(--ease-spring);
 }
 
 /* Every field in a list-row (name, vertical tag, chips, flag) gets its own
    min-width so it can wrap onto the next line instead of forcing the whole
    row wider than its card and overflowing off screen on narrow viewports. */
 .list-row > * { min-width: 0; overflow-wrap: break-word; }
-.list-row:hover { background: var(--hover-tint); transform: translateX(2px); }
+/* Background-only hover: list rows are scanned dozens of times a session, and
+   a sideways nudge on every pass reads as jitter rather than feedback. The
+   press scale below stays as the confirmation that a row was activated. */
+.list-row:hover { background: var(--hover-tint); }
 
 /* Zebra-striped list rows (Companies/Countries/Allocators) — same alternating-
    row + inline-bar coloring as the Asset Economics market table, kept on
@@ -1536,6 +1644,12 @@ body.has-back-button .page-header {
   gap: var(--space-3);
   align-items: stretch;
 }
+
+/* Grid items default to min-width:auto (their content's width). The timeline
+   SVG sizes itself to its container via ResizeObserver, so without this the
+   track can never shrink below the SVG's last width and the chart card runs
+   off the right edge on phones. */
+.dashboard-hero-grid > * { min-width: 0; }
 
 .dashboard-hero-side {
   display: flex;

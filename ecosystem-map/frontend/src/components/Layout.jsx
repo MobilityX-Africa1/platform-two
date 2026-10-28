@@ -12,9 +12,17 @@ export function Layout() {
   const { status, error } = useNotionData();
   const { pathname } = useLocation();
   const rightPanelRef = useRef(null);
+  const drawerToggleRef = useRef(null);
   const [collapsed, setCollapsed] = useState(
     () => typeof window !== 'undefined' && window.matchMedia(MOBILE_BREAKPOINT).matches
   );
+  // On narrow screens the collapsed icon rail can be opened as an overlay
+  // drawer, so labels and counts stay reachable on touch devices (where the
+  // rail's hover tooltips never show). It records the path it was opened on,
+  // so navigating anywhere from the drawer closes it without an effect.
+  const [drawerOpenedAt, setDrawerOpenedAt] = useState(null);
+  const drawerOpen = drawerOpenedAt === pathname;
+  const setDrawerOpen = (open) => setDrawerOpenedAt(open ? pathname : null);
 
   // Auto-collapse the sidebar to an icon rail when the window is dragged
   // narrower than tablet width, so it never squeezes the main content down
@@ -22,7 +30,10 @@ export function Layout() {
   // resets it the same way most responsive sidebars behave.
   useEffect(() => {
     const mql = window.matchMedia(MOBILE_BREAKPOINT);
-    const handleChange = (e) => setCollapsed(e.matches);
+    const handleChange = (e) => {
+      setCollapsed(e.matches);
+      setDrawerOpenedAt(null);
+    };
     mql.addEventListener('change', handleChange);
     return () => mql.removeEventListener('change', handleChange);
   }, []);
@@ -34,12 +45,35 @@ export function Layout() {
     rightPanelRef.current?.scrollTo(0, 0);
   }, [pathname]);
 
+  useEffect(() => {
+    if (!drawerOpen) return undefined;
+    function onKey(e) {
+      if (e.key === 'Escape') {
+        setDrawerOpenedAt(null);
+        drawerToggleRef.current?.focus();
+      }
+    }
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [drawerOpen]);
+
   return (
     <div className="app-shell">
       <div className="app-background">
         <div className="app-background-glow" />
       </div>
-      <LeftPanel collapsed={collapsed} />
+      {/* Holds the rail's 64px in the flow while the drawer floats over the
+          content, so opening it never shifts the page underneath. */}
+      {collapsed && drawerOpen && <div className="left-panel-placeholder" aria-hidden="true" />}
+      <LeftPanel
+        collapsed={collapsed}
+        drawerOpen={drawerOpen}
+        onToggleDrawer={() => setDrawerOpen(!drawerOpen)}
+        toggleRef={drawerToggleRef}
+      />
+      {collapsed && drawerOpen && (
+        <div className="left-panel-scrim" onClick={() => setDrawerOpen(false)} aria-hidden="true" />
+      )}
       <div className="right-panel" ref={rightPanelRef}>
         <div className="right-panel-inner">
           {status === 'error' && (

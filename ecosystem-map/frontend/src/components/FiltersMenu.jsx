@@ -21,6 +21,12 @@ export function FiltersMenu({ groups, activeItems, onClearAll }) {
 
   const activeCount = activeItems.length;
 
+  function close() {
+    setOpen(false);
+    setView('root');
+    setQuery('');
+  }
+
   useEffect(() => {
     if (!open) return undefined;
     function onDocClick(e) {
@@ -40,12 +46,6 @@ export function FiltersMenu({ groups, activeItems, onClearAll }) {
   useEffect(() => {
     if (open) inputRef.current?.focus();
   }, [open, view]);
-
-  function close() {
-    setOpen(false);
-    setView('root');
-    setQuery('');
-  }
 
   function toggleOpen() {
     setOpen((wasOpen) => {

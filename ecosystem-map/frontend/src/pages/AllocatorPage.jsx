@@ -178,10 +178,10 @@ export function AllocatorPage() {
               <tbody>
                 {portfolio.map((c) => (
                   <Row key={c.id} to={`/company/${c.id}`}>
-                    <td className="data-table-name">
+                    <td><div className="data-table-name">
                       <CompanyLogo name={c.name} website={c.website} size={28} />
                       <span>{c.name}</span>
-                    </td>
+                    </div></td>
                     <td className="data-table-chip-cell">
                       {c.country && <span className="chip chip-neutral">{c.country.name}</span>}
                     </td>

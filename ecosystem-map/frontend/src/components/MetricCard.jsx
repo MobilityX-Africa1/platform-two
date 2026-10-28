@@ -18,6 +18,8 @@ const ACCENT_FILL_CLASS = {
 
 // `delta`/`sparkline` are optional — omit both when there's no real
 // historical data to back them rather than rendering a fake trend.
+// `deltaTrend` is 'up' | 'down' | 'flat'; 'flat' drops the arrow and the
+// gain/loss colour for a period with no change.
 // `to` is optional — when given, the whole tile becomes a link to the page
 // that tile's metric is drilling into. `icon`/`accent` are optional — pages
 // that don't have a natural per-metric icon (Asset Economics, Vertical) can
@@ -43,7 +45,8 @@ export function MetricCard({ label, value, delta, deltaTrend = 'up', sparkline, 
           <span className={`metric-value${valueClassName ? ` ${valueClassName}` : ''}`}>{value}</span>
           {delta && (
             <span className={`metric-delta-pill metric-delta-pill--${deltaTrend}`}>
-              {deltaTrend === 'down' ? <ArrowDownRight size={11} strokeWidth={2.5} /> : <ArrowUpRight size={11} strokeWidth={2.5} />}
+              {deltaTrend === 'down' && <ArrowDownRight size={11} strokeWidth={2.5} />}
+              {deltaTrend === 'up' && <ArrowUpRight size={11} strokeWidth={2.5} />}
               {delta}
             </span>
           )}

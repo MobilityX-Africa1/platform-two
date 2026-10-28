@@ -5,6 +5,12 @@ const PAD_TOP = 46;
 const PAD_SIDE = 30;
 const PAD_BOTTOM = 10;
 const DEFAULT_WIDTH = 640;
+// Below these per-point spacings the direct labels start colliding (narrow
+// cards / phones): value labels drop to just the latest point (the peak keeps
+// its callout, every value stays on the hover/tap tooltip) and the axis
+// switches to short years.
+const MIN_STEP_FOR_POINT_LABELS = 52;
+const MIN_STEP_FOR_FULL_YEARS = 44;
 
 // Single-series trend line, direct value labels instead of a Y axis, and a
 // callout annotation on the peak point. Points with no date on the source
@@ -40,6 +46,8 @@ export function InvestmentTimeline({ data, formatValue }) {
   const plotWidth = width - PAD_SIDE * 2;
   const plotHeight = HEIGHT - PAD_TOP - PAD_BOTTOM;
   const stepX = data.length > 1 ? plotWidth / (data.length - 1) : 0;
+  const denseLabels = data.length > 1 && stepX < MIN_STEP_FOR_POINT_LABELS;
+  const shortYears = data.length > 1 && stepX < MIN_STEP_FOR_FULL_YEARS;
 
   const points = data.map((d, i) => ({
     ...d,
@@ -74,6 +82,8 @@ export function InvestmentTimeline({ data, formatValue }) {
         viewBox={`0 0 ${width} ${HEIGHT}`}
         className="timeline-svg"
         onMouseLeave={() => setHoverIndex(null)}
+        role="img"
+        aria-label={`Investment by year: ${points.map((p) => `${p.year} ${formatValue(p.amount)}`).join(', ')}`}
       >
         <defs>
           <linearGradient id="timeline-fill" x1="0" y1="0" x2="0" y2="1">
@@ -88,11 +98,16 @@ export function InvestmentTimeline({ data, formatValue }) {
         {points.map((p, i) => {
           const anchor = i === 0 ? 'start' : i === points.length - 1 ? 'end' : 'middle';
           const labelX = i === 0 ? p.x - 4 : i === points.length - 1 ? p.x + 4 : p.x;
+          // A label above the point sits right where a steep segment up to a
+          // neighbor passes — drop it below the point instead, as long as
+          // that still clears the bottom edge.
+          const steepNeighbor = [points[i - 1], points[i + 1]].some((n) => n && p.y - n.y > 24);
+          const labelY = steepNeighbor && p.y + 20 < HEIGHT ? p.y + 20 : p.y - 12;
           return (
             <g key={p.year}>
               <circle cx={p.x} cy={p.y} r={4} fill="var(--surface)" stroke="var(--plum)" strokeWidth="2" />
-              {i !== peakIndex && (
-                <text x={labelX} y={p.y - 12} textAnchor={anchor} className="timeline-point-label">
+              {i !== peakIndex && (!denseLabels || i === points.length - 1) && (
+                <text x={labelX} y={labelY} textAnchor={anchor} className="timeline-point-label">
                   {formatValue(p.amount)}
                 </text>
               )}
@@ -153,9 +168,9 @@ export function InvestmentTimeline({ data, formatValue }) {
         </div>
       )}
 
-      <div className="timeline-axis" style={{ padding: `0 ${PAD_SIDE}px` }}>
+      <div className="timeline-axis" style={{ padding: `0 ${PAD_SIDE}px` }} aria-hidden="true">
         {points.map((p) => (
-          <span key={p.year}>{p.year}</span>
+          <span key={p.year}>{shortYears ? `’${String(p.year).slice(-2)}` : p.year}</span>
         ))}
       </div>
     </div>
