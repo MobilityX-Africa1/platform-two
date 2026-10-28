@@ -110,12 +110,13 @@ export function DealsPage() {
       </MetricGrid>
 
       <div className="row" style={{ gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-        <div className="search-box" style={{ margin: 0, width: 260 }}>
+        <div className="search-box search-box--toolbar" style={{ margin: 0, width: 260 }}>
           <Search size={14} />
           <input
             type="text"
             className="search-input"
             placeholder="Filter by deal, company, or investor…"
+            aria-label="Filter deals by deal, company, or investor"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -123,6 +124,7 @@ export function DealsPage() {
         <button
           type="button"
           className={`filter-chip${dealType === '' ? ' selected' : ''}`}
+          aria-pressed={dealType === ''}
           onClick={() => setDealType('')}
         >
           All types
@@ -132,6 +134,7 @@ export function DealsPage() {
             key={t}
             type="button"
             className={`filter-chip${dealType === t ? ' selected' : ''}`}
+            aria-pressed={dealType === t}
             onClick={() => setDealType(t === dealType ? '' : t)}
           >
             {t}
@@ -165,9 +168,17 @@ export function DealsPage() {
           <div className="dashboard-top-grid-cell">
             <h2 className="section-title">Investment by region</h2>
             <div className="card" style={{ overflow: 'hidden' }}>
+              {/* Same treatment as the Dashboard's region card: the unmapped
+                  bucket is set apart as a footnote, not ranked as a region. */}
               <RankedList
-                items={stats.investmentByRegion.map((r) => ({ label: r.region, value: r.amount }))}
+                items={stats.investmentByRegion
+                  .filter((r) => r.region !== 'Unspecified')
+                  .map((r) => ({ label: r.region, value: r.amount }))}
                 formatValue={formatUSDM}
+                footnote={(() => {
+                  const unmapped = stats.investmentByRegion.find((r) => r.region === 'Unspecified');
+                  return unmapped ? { label: 'Unspecified (unmapped)', value: unmapped.amount } : null;
+                })()}
               />
             </div>
           </div>

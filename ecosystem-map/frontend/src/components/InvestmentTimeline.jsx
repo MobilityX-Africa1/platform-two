@@ -96,13 +96,25 @@ export function InvestmentTimeline({ data, formatValue }) {
         <path d={linePath} fill="none" stroke="var(--plum)" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
 
         {points.map((p, i) => {
-          const anchor = i === 0 ? 'start' : i === points.length - 1 ? 'end' : 'middle';
-          const labelX = i === 0 ? p.x - 4 : i === points.length - 1 ? p.x + 4 : p.x;
+          const isFirst = i === 0;
+          const isLast = i === points.length - 1;
+          let anchor = isFirst ? 'start' : isLast ? 'end' : 'middle';
+          let labelX = isFirst ? p.x - 4 : isLast ? p.x + 4 : p.x;
+          let labelY = p.y - 12;
           // A label above the point sits right where a steep segment up to a
-          // neighbor passes — drop it below the point instead, as long as
-          // that still clears the bottom edge.
+          // neighbor passes — drop it below the point instead. An end point
+          // too low for that tucks the label beside the point, under the
+          // incoming segment, rather than across it.
           const steepNeighbor = [points[i - 1], points[i + 1]].some((n) => n && p.y - n.y > 24);
-          const labelY = steepNeighbor && p.y + 20 < HEIGHT ? p.y + 20 : p.y - 12;
+          if (steepNeighbor) {
+            if (p.y + 20 < HEIGHT) {
+              labelY = p.y + 20;
+            } else if (isLast || isFirst) {
+              labelY = p.y + 8;
+              labelX = isLast ? p.x - 10 : p.x + 10;
+              anchor = isLast ? 'end' : 'start';
+            }
+          }
           return (
             <g key={p.year}>
               <circle cx={p.x} cy={p.y} r={4} fill="var(--surface)" stroke="var(--plum)" strokeWidth="2" />

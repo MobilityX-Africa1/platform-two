@@ -65,12 +65,13 @@ export function CompaniesPage() {
           </p>
         </div>
         <div className="row" style={{ gap: 8 }}>
-          <div className="search-box" style={{ margin: 0, width: 220 }}>
+          <div className="search-box search-box--toolbar" style={{ margin: 0, width: 220 }}>
             <Search size={14} />
             <input
               type="text"
               className="search-input"
               placeholder="Search companies…"
+              aria-label="Search companies"
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value);
