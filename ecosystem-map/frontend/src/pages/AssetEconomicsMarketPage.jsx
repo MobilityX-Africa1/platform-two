@@ -4,6 +4,7 @@ import { CardSkeletonGrid } from '../components/Skeletons';
 import { CountryFlag } from '../components/CountryFlag';
 import { Breadcrumb } from '../components/Breadcrumb';
 import { getField } from '../lib/normalize';
+import { jumpToSection } from '../lib/sectionJump';
 import { formatMoney, formatMonthYear, formatNumber } from '../lib/format';
 import {
   annualIce, annualEv, annualDelta, annualDeltaPct, threeYearDelta,
@@ -15,12 +16,21 @@ const money2 = (v) => formatMoney(v, 2);
 const dash = '—';
 const diff = (a, b) => (a == null || b == null ? null : a - b);
 
-function StatTile({ label, value, accent }) {
-  return (
-    <div className="econ-stat-tile">
+// `target` is the id of the section below that breaks this figure down;
+// with it the tile becomes a button that jumps there.
+function StatTile({ label, value, accent, target, actionHint }) {
+  const content = (
+    <>
       <span className="econ-stat-label">{label}</span>
       <span className={`econ-stat-value${accent ? ' accent' : ''}`}>{value}</span>
-    </div>
+    </>
+  );
+  if (!target) return <div className="econ-stat-tile">{content}</div>;
+  return (
+    <button type="button" className="econ-stat-tile econ-stat-tile-link" onClick={() => jumpToSection(target)}>
+      {content}
+      {actionHint && <span className="visually-hidden"> — {actionHint}</span>}
+    </button>
   );
 }
 
@@ -44,10 +54,10 @@ function CompareRow({ label, ice, ev, delta, bold }) {
   );
 }
 
-function Section({ title, twoCol, children }) {
+function Section({ title, twoCol, id, children }) {
   return (
     <div>
-      <h3 className="econ-section-title">{title}</h3>
+      <h3 className="econ-section-title" id={id}>{title}</h3>
       <table className="econ-section-table">
         {!twoCol && (
           <thead>
@@ -123,11 +133,20 @@ export function AssetEconomicsMarketPage() {
       </div>
 
       <div className="econ-stat-tiles">
-        <StatTile label="ICE / yr" value={money(iceAnnual)} />
-        <StatTile label="EV / yr" value={money(evAnnual)} accent />
-        <StatTile label="Δ annual" value={money(delta)} />
-        <StatTile label="Δ %" value={deltaPct == null ? dash : `${Math.round(deltaPct)}%`} accent />
-        <StatTile label="3-yr Δ" value={money(threeYr)} />
+        {/* ICE/EV per year are the "Total ICE/EV opex" rows; the two Δ tiles
+            compare those totals, so they open the running-cost comparison
+            (ICE section, with EV directly after); 3-yr Δ is the Year 3 TCO row. */}
+        <StatTile label="ICE / yr" value={money(iceAnnual)} target="econ-ice-running" actionHint="jump to ICE running costs" />
+        <StatTile label="EV / yr" value={money(evAnnual)} accent target="econ-ev-running" actionHint="jump to EV running costs" />
+        <StatTile label="Δ annual" value={money(delta)} target="econ-ice-running" actionHint="jump to the ICE vs EV running-cost comparison" />
+        <StatTile
+          label="Δ %"
+          value={deltaPct == null ? dash : `${Math.round(deltaPct)}%`}
+          accent
+          target="econ-ice-running"
+          actionHint="jump to the ICE vs EV running-cost comparison"
+        />
+        <StatTile label="3-yr Δ" value={money(threeYr)} target="econ-tco" actionHint="jump to total cost of ownership" />
       </div>
 
       <Section title="Fuel & electricity prices" twoCol>
@@ -150,21 +169,21 @@ export function AssetEconomicsMarketPage() {
         <CompareRow label="Annual financing cost" ice={dash} ev={money(evAnnualFinancing)} delta={dash} />
       </Section>
 
-      <Section title="ICE running costs (annual)">
+      <Section title="ICE running costs (annual)" id="econ-ice-running">
         <CompareRow label="Fuel" ice={money(getField(econ, 'Annual Fuel Cost ICE USD'))} ev={dash} delta={dash} />
         <CompareRow label="Maintenance" ice={money(getField(econ, 'Annual Maintenance ICE USD'))} ev={dash} delta={dash} />
         <CompareRow label="Insurance" ice={money(getField(econ, 'Annual Insurance ICE USD'))} ev={dash} delta={dash} />
         <CompareRow label="Total ICE opex" ice={money(iceAnnual)} ev={dash} delta={dash} bold />
       </Section>
 
-      <Section title="EV running costs (annual)">
+      <Section title="EV running costs (annual)" id="econ-ev-running">
         <CompareRow label="Electricity" ice={dash} ev={money(getField(econ, 'Annual Electricity Cost USD'))} delta={dash} />
         <CompareRow label="Maintenance" ice={dash} ev={money(getField(econ, 'Annual Maintenance EV USD'))} delta={dash} />
         <CompareRow label="Insurance" ice={dash} ev={money(getField(econ, 'Annual Insurance EV USD'))} delta={dash} />
         <CompareRow label="Total EV opex" ice={dash} ev={money(evAnnual)} delta={dash} bold />
       </Section>
 
-      <Section title="Total cost of ownership">
+      <Section title="Total cost of ownership" id="econ-tco">
         <CompareRow
           label="Year 1 (cumulative)"
           ice={money(iceYearTco(econ, 1))}

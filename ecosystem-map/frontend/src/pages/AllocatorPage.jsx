@@ -8,6 +8,8 @@ import { CountryFlag } from '../components/CountryFlag';
 import { Breadcrumb } from '../components/Breadcrumb';
 import { Row } from '../components/DataTableRow';
 import { formatUSD } from '../lib/format';
+import { StatTile } from '../components/StatTile';
+import { jumpToSection } from '../lib/sectionJump';
 
 const MARKET_COMPANIES_PREVIEW = 18;
 
@@ -100,11 +102,14 @@ export function AllocatorPage() {
     ? marketCompanies
     : marketCompanies.slice(0, MARKET_COMPANIES_PREVIEW);
 
+  // `target` is the section listing that tile's records — only set when that
+  // section actually renders (an empty portfolio has no section to open).
+  // Deals tracked opens the portfolio, which is built from those deals.
   const tiles = [
-    { label: 'Portfolio companies', value: portfolio.length },
-    (allocator.markets || []).length > 0 && { label: 'Active markets', value: allocator.markets.length },
-    marketCompanies.length > 0 && { label: 'Market companies', value: marketCompanies.length },
-    (allocator.deals || []).length > 0 && { label: 'Deals tracked', value: allocator.deals.length },
+    { label: 'Portfolio companies', value: portfolio.length, target: portfolio.length > 0 ? 'allocator-portfolio' : null, hint: 'jump to portfolio companies' },
+    (allocator.markets || []).length > 0 && { label: 'Active markets', value: allocator.markets.length, target: 'allocator-profile', hint: 'jump to the investment profile' },
+    marketCompanies.length > 0 && { label: 'Market companies', value: marketCompanies.length, target: 'allocator-market-companies', hint: 'jump to companies in active markets' },
+    (allocator.deals || []).length > 0 && { label: 'Deals tracked', value: allocator.deals.length, target: portfolio.length > 0 ? 'allocator-portfolio' : null, hint: 'jump to the companies behind these deals' },
   ].filter(Boolean);
 
   // Every scalar attribute collapsed into one label → value table instead of a
@@ -127,16 +132,19 @@ export function AllocatorPage() {
 
       <div className="stat-tile-grid">
         {tiles.map((t) => (
-          <div key={t.label} className="stat-tile">
-            <span className="stat-tile-label">{t.label}</span>
-            <span className="stat-tile-value">{t.value}</span>
-          </div>
+          <StatTile
+            key={t.label}
+            label={t.label}
+            value={t.value}
+            onClick={t.target ? () => jumpToSection(t.target) : undefined}
+            actionHint={t.hint}
+          />
         ))}
       </div>
 
       {(profileRows.length > 0 || hasMarkets) && (
         <section>
-          <h2 className="section-title">Investment profile</h2>
+          <h2 className="section-title" id="allocator-profile">Investment profile</h2>
           <div className="section-table-wrap profile-fields">
             <table className="section-table">
               <tbody>
@@ -172,7 +180,7 @@ export function AllocatorPage() {
 
       {portfolio.length > 0 && (
         <section>
-          <h2 className="section-title">Portfolio companies</h2>
+          <h2 className="section-title" id="allocator-portfolio">Portfolio companies</h2>
           <div className="data-table-wrap">
             <table className="data-table">
               <tbody>
@@ -195,7 +203,7 @@ export function AllocatorPage() {
 
       {marketCompanies.length > 0 && (
         <section>
-          <h2 className="section-title">Companies in active markets</h2>
+          <h2 className="section-title" id="allocator-market-companies">Companies in active markets</h2>
           <p className="muted" style={{ marginTop: -8, marginBottom: 12, fontSize: 'var(--text-xs)' }}>
             Companies headquartered in a market {allocator.name} is active in — not necessarily
             companies this allocator has invested in.

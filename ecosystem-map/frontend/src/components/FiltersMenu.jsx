@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { SlidersHorizontal, Search, ChevronRight, ChevronLeft, X } from 'lucide-react';
 
 // Replaces the old always-expanded, everything-at-once filter drawer with a
@@ -12,12 +12,24 @@ import { SlidersHorizontal, Search, ChevronRight, ChevronLeft, X } from 'lucide-
 // the category list rather than staying open for more picks in that group.
 // `activeItems` is the flat "currently applied" list ([{ key, text,
 // onClear }]) shown at the top of the root view.
-export function FiltersMenu({ groups, activeItems, onClearAll }) {
+//
+// `ref` exposes `openTo(groupKey)`, which opens the popover already drilled
+// into one category — its option list (with per-option counts) doubles as
+// that field's breakdown, e.g. for a "Markets reached" metric card.
+export function FiltersMenu({ groups, activeItems, onClearAll, ref }) {
   const [open, setOpen] = useState(false);
   const [view, setView] = useState('root'); // 'root' | a group key
   const [query, setQuery] = useState('');
   const menuRef = useRef(null);
   const inputRef = useRef(null);
+
+  useImperativeHandle(ref, () => ({
+    openTo(groupKey) {
+      setOpen(true);
+      setView(groups.some((g) => g.key === groupKey) ? groupKey : 'root');
+      setQuery('');
+    },
+  }), [groups]);
 
   const activeCount = activeItems.length;
 

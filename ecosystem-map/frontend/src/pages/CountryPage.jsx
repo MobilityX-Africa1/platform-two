@@ -1,4 +1,6 @@
 import { useParams, Link } from 'react-router-dom';
+import { StatTile } from '../components/StatTile';
+import { jumpToSection } from '../lib/sectionJump';
 import {
   ExternalLink, Users, Building2, UserRound, Smartphone, ShieldCheck, TrendingUp,
   Zap, Plug, PlugZap, Battery, RefreshCw, Link2, Car, CarFront, Fuel, Factory,
@@ -192,10 +194,12 @@ export function CountryPage() {
             {country.eVPenetration != null ? `${country.eVPenetration}%` : '—'}
           </span>
         </div>
-        <div className="stat-tile">
-          <span className="stat-tile-label">Active companies</span>
-          <span className="stat-tile-value">{country.companies?.length ?? 0}</span>
-        </div>
+        <StatTile
+          label="Active companies"
+          value={country.companies?.length ?? 0}
+          onClick={() => jumpToSection('country-companies')}
+          actionHint="jump to companies by vertical"
+        />
         <div className="stat-tile">
           <span className="stat-tile-label">Dominant vehicle</span>
           <span className="stat-tile-value" style={{ fontSize: 'var(--text-md)' }}>
@@ -263,24 +267,27 @@ export function CountryPage() {
           <h2 className="section-title">TCO analysis</h2>
           <div className="card" style={{ padding: 16 }}>
             <div className="stat-tile-grid">
-              <div className="stat-tile">
-                <span className="stat-tile-label">Annual savings, EV vs ICE</span>
-                <span className="stat-tile-value accent-indigo">
-                  {formatMoney(getField(country.economics, 'Annual Savings EV vs ICE USD'))}
-                </span>
-              </div>
-              <div className="stat-tile">
-                <span className="stat-tile-label">Cost per km, EV</span>
-                <span className="stat-tile-value">
-                  {formatMoney(getField(country.economics, 'Cost per km EV USD'), 3)}
-                </span>
-              </div>
-              <div className="stat-tile">
-                <span className="stat-tile-label">Cost per km, ICE</span>
-                <span className="stat-tile-value">
-                  {formatMoney(getField(country.economics, 'Fuel Cost per km ICE USD'), 3)}
-                </span>
-              </div>
+              {/* All three come from this market's Asset Economics record —
+                  its full TCO page is where each figure is broken down. */}
+              <StatTile
+                label="Annual savings, EV vs ICE"
+                value={formatMoney(getField(country.economics, 'Annual Savings EV vs ICE USD'))}
+                valueClassName="accent-indigo"
+                to={`/asset-economics/${country.economics.id}`}
+                actionHint="open the full TCO analysis"
+              />
+              <StatTile
+                label="Cost per km, EV"
+                value={formatMoney(getField(country.economics, 'Cost per km EV USD'), 3)}
+                to={`/asset-economics/${country.economics.id}`}
+                actionHint="open the full TCO analysis"
+              />
+              <StatTile
+                label="Cost per km, ICE"
+                value={formatMoney(getField(country.economics, 'Fuel Cost per km ICE USD'), 3)}
+                to={`/asset-economics/${country.economics.id}`}
+                actionHint="open the full TCO analysis"
+              />
             </div>
             <Link
               to={`/asset-economics/${country.economics.id}`}
@@ -294,7 +301,7 @@ export function CountryPage() {
       )}
 
       <section>
-        <h2 className="section-title">Companies by vertical</h2>
+        <h2 className="section-title" id="country-companies">Companies by vertical</h2>
         <div className="stack" style={{ gap: 20 }}>
           {companiesByVertical.map((group) => (
             <div key={group.vertical}>

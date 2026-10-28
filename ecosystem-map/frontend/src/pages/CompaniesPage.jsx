@@ -12,12 +12,15 @@ import { MetricCard, MetricGrid } from '../components/MetricCard';
 import { Row } from '../components/DataTableRow';
 import { displayStage, formatUSDM, formatNumber } from '../lib/format';
 import { violetShade, violetTextShade } from '../lib/assetEconomics';
+import { jumpToSection } from '../lib/sectionJump';
 
 const PAGE_SIZE = 40;
 
 export function CompaniesPage() {
   const { companies, status } = useNotionData();
-  const { search, setSearch, vertical, stage, country, region, evAssetTag, clearFilters } = useFilterStore();
+  const {
+    search, setSearch, vertical, stage, country, region, evAssetTag, idSet, sortBy, setSortBy, showOnly, clearFilters,
+  } = useFilterStore();
   const { groups, activeItems } = useCompanyFilterGroups();
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
@@ -38,7 +41,9 @@ export function CompaniesPage() {
 
   if (status !== 'ready') return <CardSkeletonGrid count={8} />;
 
+  const idFilter = idSet ? new Set(idSet.ids) : null;
   const filtered = companies.filter((c) => {
+    if (idFilter && !idFilter.has(c.id)) return false;
     if (search && !c.name.toLowerCase().includes(search.toLowerCase())) return false;
     if (vertical && !(c.vertical || []).includes(vertical)) return false;
     if (stage && c.stage !== stage) return false;
@@ -48,7 +53,21 @@ export function CompaniesPage() {
     return true;
   });
 
-  const sorted = [...filtered].sort((a, b) => (a.rankingOrder ?? 999) - (b.rankingOrder ?? 999));
+  const byRank = (a, b) => (a.rankingOrder ?? 999) - (b.rankingOrder ?? 999);
+  const sorted = [...filtered].sort(
+    sortBy === 'funding'
+      ? (a, b) => (b.totalFundingRaisedM || 0) - (a.totalFundingRaisedM || 0) || byRank(a, b)
+      : byRank,
+  );
+
+  // Metric-card actions: each resets this page to exactly the records the
+  // card summarises (the header stats are computed over the unfiltered set),
+  // then jumps to the table.
+  const showAll = (nextSort = 'rank') => {
+    showOnly({}, nextSort);
+    setVisibleCount(PAGE_SIZE);
+    jumpToSection('companies-table');
+  };
   const visible = sorted.slice(0, visibleCount);
   const raisedValues = sorted.map((c) => c.totalFundingRaisedM || 0);
   const minRaisedM = Math.min(...raisedValues, 0);
@@ -85,9 +104,30 @@ export function CompaniesPage() {
 
       {headerStats && (
         <MetricGrid className="metric-grid-compact">
-          <MetricCard label="Companies tracked" value={formatNumber(companies.length)} icon={Building2} accent="plum" />
-          <MetricCard label="Countries represented" value={formatNumber(headerStats.countriesRepresented)} icon={Globe2} accent="plum" />
-          <MetricCard label="Total funding raised" value={formatUSDM(headerStats.totalRaisedM)} icon={TrendingUp} accent="plum" />
+          <MetricCard
+            label="Companies tracked"
+            value={formatNumber(companies.length)}
+            icon={Building2}
+            accent="plum"
+            onClick={() => showAll()}
+            actionHint="show all companies"
+          />
+          <MetricCard
+            label="Countries represented"
+            value={formatNumber(headerStats.countriesRepresented)}
+            icon={Globe2}
+            accent="plum"
+            to="/countries"
+            actionHint="open the countries breakdown"
+          />
+          <MetricCard
+            label="Total funding raised"
+            value={formatUSDM(headerStats.totalRaisedM)}
+            icon={TrendingUp}
+            accent="plum"
+            onClick={() => showAll('funding')}
+            actionHint="list all companies by funding raised"
+          />
           {headerStats.topVertical && (
             <MetricCard
               label="Leading vertical"
@@ -95,20 +135,32 @@ export function CompaniesPage() {
               delta={`${formatNumber(headerStats.topVertical[1])} companies`}
               icon={Layers}
               accent="plum"
+              to={`/vertical/${encodeURIComponent(headerStats.topVertical[0])}`}
+              actionHint="open this vertical"
             />
           )}
         </MetricGrid>
       )}
 
-      <div className="data-table-wrap">
+      <div className="data-table-wrap" id="companies-table">
         <table className="data-table">
           <thead>
             <tr>
-              <th>Company</th>
+              <th aria-sort={sortBy === 'rank' ? 'ascending' : 'none'}>
+                <button type="button" className="th-sort" onClick={() => setSortBy('rank')}>
+                  Company<span className="visually-hidden">, sort by Top 50 rank</span>
+                  {sortBy === 'rank' && <span aria-hidden="true"> ↑</span>}
+                </button>
+              </th>
               <th>Vertical</th>
               <th>Stage</th>
               <th>Country</th>
-              <th>Total funding raised</th>
+              <th aria-sort={sortBy === 'funding' ? 'descending' : 'none'}>
+                <button type="button" className="th-sort" onClick={() => setSortBy('funding')}>
+                  Total funding raised<span className="visually-hidden">, sort highest first</span>
+                  {sortBy === 'funding' && <span aria-hidden="true"> ↓</span>}
+                </button>
+              </th>
             </tr>
           </thead>
           <tbody>

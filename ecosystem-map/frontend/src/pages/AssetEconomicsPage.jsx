@@ -8,6 +8,8 @@ import { MarketComparisonTable } from '../components/MarketComparisonTable';
 import { getField } from '../lib/normalize';
 import { formatMoney, formatNumber } from '../lib/format';
 import { violetShade } from '../lib/assetEconomics';
+import { jumpToSection } from '../lib/sectionJump';
+import { Row } from '../components/DataTableRow';
 
 function LollipopMark({ x, y, width, height, payload, fill }) {
   const cy = y + height / 2;
@@ -72,15 +74,36 @@ export function AssetEconomicsPage() {
       </div>
 
       <MetricGrid>
-        <MetricCard label="Markets covered" value={formatNumber(economics.length)} />
-        <MetricCard label="Avg annual savings, EV vs ICE" value={money(average(economics, 'Annual Savings EV vs ICE USD'))} valueClassName="text-indigo" />
-        <MetricCard label="Avg cost per km, EV" value={money3(average(economics, 'Cost per km EV USD'))} />
-        <MetricCard label="Avg cost per km, ICE" value={money3(average(economics, 'Fuel Cost per km ICE USD'))} />
+        <MetricCard
+          label="Markets covered"
+          value={formatNumber(economics.length)}
+          onClick={() => jumpToSection('econ-markets')}
+          actionHint="jump to the market comparison"
+        />
+        <MetricCard
+          label="Avg annual savings, EV vs ICE"
+          value={money(average(economics, 'Annual Savings EV vs ICE USD'))}
+          valueClassName="text-indigo"
+          onClick={() => jumpToSection('econ-savings')}
+          actionHint="jump to annual savings by market"
+        />
+        <MetricCard
+          label="Avg cost per km, EV"
+          value={money3(average(economics, 'Cost per km EV USD'))}
+          onClick={() => jumpToSection('econ-cost-per-km')}
+          actionHint="jump to cost per km by market"
+        />
+        <MetricCard
+          label="Avg cost per km, ICE"
+          value={money3(average(economics, 'Fuel Cost per km ICE USD'))}
+          onClick={() => jumpToSection('econ-cost-per-km')}
+          actionHint="jump to cost per km by market"
+        />
       </MetricGrid>
 
       {chartData.length > 0 && (
         <section>
-          <h2 className="section-title">Annual savings, EV vs. ICE, by market</h2>
+          <h2 className="section-title" id="econ-savings">Annual savings, EV vs. ICE, by market</h2>
           <div className="card" style={{ padding: 10, height: Math.max(180, chartData.length * 22) }}>
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
@@ -126,8 +149,34 @@ export function AssetEconomicsPage() {
 
       <section>
         <span className="eyebrow">Asset economics — market comparison</span>
-        <h2 style={{ marginTop: 4, marginBottom: 16 }}>Annual cost of ownership, ICE vs. EV, 2W</h2>
+        <h2 style={{ marginTop: 4, marginBottom: 16 }} id="econ-markets">Annual cost of ownership, ICE vs. EV, 2W</h2>
         <MarketComparisonTable markets={sorted} />
+      </section>
+
+      {/* Per-market values behind the two "Avg cost per km" cards, in the same
+          market order as the comparison above. */}
+      <section>
+        <h2 className="section-title" id="econ-cost-per-km">Cost per km by market</h2>
+        <div className="data-table-wrap">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Market</th>
+                <th className="data-table-num-cell">EV / km</th>
+                <th>ICE / km</th>
+              </tr>
+            </thead>
+            <tbody>
+              {sorted.map((m) => (
+                <Row key={m.id} to={`/asset-economics/${m.id}`}>
+                  <td><div className="data-table-name"><span>{m.name}</span></div></td>
+                  <td className="data-table-num-cell">{money3(getField(m, 'Cost per km EV USD'))}</td>
+                  <td className="data-table-num-cell">{money3(getField(m, 'Fuel Cost per km ICE USD'))}</td>
+                </Row>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </section>
     </div>
   );

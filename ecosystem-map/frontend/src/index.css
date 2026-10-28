@@ -1270,10 +1270,71 @@ body.has-back-button .page-header {
   gap: var(--space-1);
   transition: border-color 0.15s ease;
 }
-.metric-card-link { cursor: pointer; }
-.metric-card-link:hover { border-color: var(--plum); }
-.metric-card-link:focus-visible { outline: 2px solid var(--plum); outline-offset: 2px; }
-.metric-card-link:active { transform: scale(0.98); }
+/* Interactive metric/stat tiles — the card keeps its exact resting look; the
+   only signals are a plum border + slightly deeper shadow on hover, a focus
+   ring, and a small press scale. Shared by MetricCard (link or button),
+   StatTile on detail pages, and the Asset Economics market tiles. */
+.metric-card-link,
+.stat-tile-link,
+.econ-stat-tile-link {
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  width: 100%;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.16s var(--ease-out);
+}
+/* <button> variants: drop the UA button chrome so they match the link tiles. */
+button.metric-card-link,
+button.stat-tile-link,
+button.econ-stat-tile-link { appearance: none; margin: 0; }
+button.metric-card-link { background: var(--surface); border: 1px solid var(--border); }
+button.stat-tile-link { background: var(--surface); }
+
+@media (hover: hover) {
+  .metric-card-link:hover,
+  .stat-tile-link:hover,
+  .econ-stat-tile-link:hover {
+    border-color: var(--plum);
+    box-shadow: var(--shadow-raised);
+  }
+}
+.metric-card-link:focus-visible,
+.stat-tile-link:focus-visible,
+.econ-stat-tile-link:focus-visible { outline: 2px solid var(--plum); outline-offset: 2px; }
+.metric-card-link:active,
+.stat-tile-link:active,
+.econ-stat-tile-link:active { transform: scale(0.98); }
+
+/* Screen-reader-only text (e.g. a metric card's destination). */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Sortable column header — reads as the header text, not a button. */
+.th-sort {
+  font: inherit;
+  color: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  padding: 0;
+  cursor: pointer;
+}
+@media (hover: hover) {
+  .th-sort:hover { color: var(--plum); }
+}
+.th-sort:focus-visible { outline: 2px solid var(--plum); outline-offset: 2px; border-radius: var(--radius-sm); }
 
 /* Compact tiles for the dashboard's top-line stat row — smaller still than
    the default .metric-card used on vertical/asset-economics/deals pages. */

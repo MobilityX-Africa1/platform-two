@@ -21,22 +21,38 @@ const ACCENT_FILL_CLASS = {
 // `deltaTrend` is 'up' | 'down' | 'flat'; 'flat' drops the arrow and the
 // gain/loss colour for a period with no change.
 // `to` is optional — when given, the whole tile becomes a link to the page
-// that tile's metric is drilling into. `icon`/`accent` are optional — pages
+// that tile's metric is drilling into. `onClick` alone (no `to`) makes the
+// tile a button for an in-page action (jump to a breakdown, open a filter);
+// with `to` it runs first, e.g. to preset that page's filters. `actionHint`
+// is screen-reader-only text saying where the card leads, since a bare
+// label + number doesn't announce its destination. `icon`/`accent` are optional — pages
 // that don't have a natural per-metric icon (Asset Economics, Vertical) can
 // omit them and get the plain label/value/delta layout as before. `progress`
 // is optional too — a 0–1 fraction that renders a filled bar under the
 // value, for metrics that are themselves "X out of a max" (e.g. a score
 // pillar out of its point cap) rather than a standalone number.
-export function MetricCard({ label, value, delta, deltaTrend = 'up', sparkline, progress, to, icon: Icon, accent = 'plum', valueClassName }) {
+export function MetricCard({
+  label, value, delta, deltaTrend = 'up', sparkline, progress, to, onClick, actionHint,
+  icon: Icon, accent = 'plum', valueClassName,
+}) {
   const hasTrend = sparkline && sparkline.length >= 2;
-  const Tag = to ? Link : 'div';
+  const interactive = Boolean(to || onClick);
+  let Tag = 'div';
+  let tagProps = {};
+  if (to) {
+    Tag = Link;
+    tagProps = { to, onClick };
+  } else if (onClick) {
+    Tag = 'button';
+    tagProps = { type: 'button', onClick };
+  }
   return (
-    <Tag {...(to ? { to } : {})} className={`card metric-card${to ? ' metric-card-link' : ''}`}>
+    <Tag {...tagProps} className={`card metric-card${interactive ? ' metric-card-link' : ''}`}>
       <div className="metric-card-head">
         <span className="metric-label">{label}</span>
         {Icon && (
           <span className={`metric-card-icon ${ACCENT_CLASS[accent] || ACCENT_CLASS.plum}`}>
-            <Icon size={12} strokeWidth={2.25} />
+            <Icon size={12} strokeWidth={2.25} aria-hidden="true" />
           </span>
         )}
       </div>
@@ -61,6 +77,7 @@ export function MetricCard({ label, value, delta, deltaTrend = 'up', sparkline, 
           />
         </div>
       )}
+      {interactive && actionHint && <span className="visually-hidden"> — {actionHint}</span>}
     </Tag>
   );
 }

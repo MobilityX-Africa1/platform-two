@@ -11,6 +11,8 @@ import { CardSkeletonGrid, ListSkeleton } from '../components/Skeletons';
 import { RankBadge } from '../components/RankBadge';
 import { Row } from '../components/DataTableRow';
 import { formatUSDM, formatNumber, displayStage } from '../lib/format';
+import { useFilterStore } from '../store/filterStore';
+import { useAllocatorFilterStore } from '../store/allocatorFilterStore';
 
 // Funding-round progression, left to right — everything else (Bootstrapped,
 // plus any data-quality bucket like "Unspecified"/"Placeholder") is grouped
@@ -94,6 +96,10 @@ export function DashboardPage() {
           label="Companies tracked"
           value={formatNumber(stats.companiesTracked)}
           to="/companies"
+          // Filters persist in a global store — clear any left over from an
+          // earlier visit so the list matches this card's unfiltered total.
+          onClick={() => useFilterStore.getState().showOnly({})}
+          actionHint="show all companies"
           icon={Building2}
           accent="plum"
         />
@@ -103,6 +109,7 @@ export function DashboardPage() {
           delta={formatDelta(stats.investmentThisQuarterM)}
           deltaTrend={deltaTrendOf(stats.investmentThisQuarterM)}
           to="/deals"
+          actionHint="open deal aggregates"
           icon={TrendingUp}
           accent="leaf"
         />
@@ -110,6 +117,7 @@ export function DashboardPage() {
           label="Countries represented"
           value={formatNumber(stats.countriesTracked)}
           to="/countries"
+          actionHint="open the countries breakdown"
           icon={Globe2}
           accent="sky"
         />
@@ -117,6 +125,8 @@ export function DashboardPage() {
           label="Capital allocators"
           value={formatNumber(stats.activeAllocators)}
           to="/allocators"
+          onClick={() => useAllocatorFilterStore.getState().showOnly({})}
+          actionHint="show all capital allocators"
           icon={Landmark}
           accent="coral"
         />

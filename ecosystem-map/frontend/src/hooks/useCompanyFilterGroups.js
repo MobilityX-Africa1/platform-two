@@ -26,7 +26,7 @@ function countBy(companies, getValues) {
 // out of the generic popover component.
 export function useCompanyFilterGroups() {
   const { companies, countries, status } = useNotionData();
-  const { vertical, stage, evAssetTag, country, region, toggleFilter } = useFilterStore();
+  const { vertical, stage, evAssetTag, country, region, idSet, toggleFilter } = useFilterStore();
 
   if (status !== 'ready') return { groups: [], activeItems: [] };
 
@@ -77,6 +77,7 @@ export function useCompanyFilterGroups() {
       text: publishedCountries.find((c) => c.value === country)?.text ?? country,
       onClear: () => toggleFilter('country', country),
     },
+    idSet && { key: 'idSet', text: idSet.label, onClear: () => toggleFilter('idSet', idSet) },
   ].filter(Boolean);
 
   return { groups, activeItems };

@@ -7,6 +7,9 @@ import { DonutChart } from '../components/DonutChart';
 import { RankedList } from '../components/RankedList';
 import { InvestmentTimeline } from '../components/InvestmentTimeline';
 import { formatUSDM } from '../lib/format';
+import { jumpToSection } from '../lib/sectionJump';
+import { useFilterStore } from '../store/filterStore';
+import { useAllocatorFilterStore } from '../store/allocatorFilterStore';
 
 // Deal Tracker's individual, named deal records are never shown publicly —
 // only aggregates (CHANGES.md §6). Search/filters below narrow which deals
@@ -40,10 +43,12 @@ export function DealsPage() {
 
   const stats = useMemo(() => {
     const totalAmountM = filtered.reduce((sum, d) => sum + (d.amountM || 0), 0);
-    const companiesRepresented = new Set(filtered.map((d) => d.company?.id).filter(Boolean)).size;
-    const investorsRepresented = new Set(
-      filtered.flatMap((d) => (d.allocators || []).map((a) => a.id)),
-    ).size;
+    // The distinct records behind the two "represented" counts, kept so their
+    // metric cards can open exactly those companies / investors.
+    const companyIds = [...new Set(filtered.map((d) => d.company?.id).filter(Boolean))];
+    const investorIds = [...new Set(filtered.flatMap((d) => (d.allocators || []).map((a) => a.id)))];
+    const companiesRepresented = companyIds.length;
+    const investorsRepresented = investorIds.length;
 
     const dealSplit = Object.values(
       filtered.reduce((acc, d) => {
@@ -84,6 +89,8 @@ export function DealsPage() {
       totalAmountM,
       companiesRepresented,
       investorsRepresented,
+      companyIds,
+      investorIds,
       dealSplit,
       investmentByYear,
       undatedAmountM,
@@ -92,6 +99,10 @@ export function DealsPage() {
   }, [filtered]);
 
   if (status !== 'ready') return <CardSkeletonGrid count={8} />;
+
+  // Describes the current deal selection for the filter chip shown on the
+  // destination list, so it's clear why that list is narrowed.
+  const selectionLabel = `In ${filtered.length} tracked deal${filtered.length === 1 ? '' : 's'}${dealType ? ` (${dealType})` : ''}${search ? ` matching “${search}”` : ''}`;
 
   return (
     <div className="stack" style={{ gap: 24 }}>
@@ -103,10 +114,40 @@ export function DealsPage() {
       </div>
 
       <MetricGrid>
-        <MetricCard label="Deals tracked" value={filtered.length} icon={Handshake} accent="plum" />
-        <MetricCard label="Total amount tracked" value={formatUSDM(stats.totalAmountM)} icon={TrendingUp} accent="leaf" />
-        <MetricCard label="Companies represented" value={stats.companiesRepresented} icon={Building2} accent="sky" />
-        <MetricCard label="Investors represented" value={stats.investorsRepresented} icon={Landmark} accent="coral" />
+        <MetricCard
+          label="Deals tracked"
+          value={filtered.length}
+          icon={Handshake}
+          accent="plum"
+          onClick={() => jumpToSection('deals-split')}
+          actionHint="jump to the deal split by type"
+        />
+        <MetricCard
+          label="Total amount tracked"
+          value={formatUSDM(stats.totalAmountM)}
+          icon={TrendingUp}
+          accent="leaf"
+          onClick={() => jumpToSection('deals-by-year')}
+          actionHint="jump to investment by year"
+        />
+        <MetricCard
+          label="Companies represented"
+          value={stats.companiesRepresented}
+          icon={Building2}
+          accent="sky"
+          to="/companies"
+          onClick={() => useFilterStore.getState().showOnly({ idSet: { ids: stats.companyIds, label: selectionLabel } })}
+          actionHint="list these companies"
+        />
+        <MetricCard
+          label="Investors represented"
+          value={stats.investorsRepresented}
+          icon={Landmark}
+          accent="coral"
+          to="/allocators"
+          onClick={() => useAllocatorFilterStore.getState().showOnly({ idSet: { ids: stats.investorIds, label: selectionLabel } })}
+          actionHint="list these investors"
+        />
       </MetricGrid>
 
       <div className="row" style={{ gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
@@ -147,7 +188,7 @@ export function DealsPage() {
       ) : (
         <div className="dashboard-top-grid" style={{ gridTemplateColumns: '1fr 1fr' }}>
           <div className="dashboard-top-grid-cell">
-            <h2 className="section-title">Deal split by type</h2>
+            <h2 className="section-title" id="deals-split">Deal split by type</h2>
             <div className="card" style={{ padding: stats.dealSplit.length <= 3 ? '16px 20px' : '4px 20px' }}>
               {stats.dealSplit.length <= 3 ? (
                 <DonutChart
@@ -188,7 +229,7 @@ export function DealsPage() {
       {filtered.length > 0 && stats.investmentByYear.length > 0 && (
         <div>
           <div className="row" style={{ justifyContent: 'space-between', alignItems: 'baseline' }}>
-            <h2 className="section-title">Investment by year</h2>
+            <h2 className="section-title" id="deals-by-year">Investment by year</h2>
             {stats.undatedAmountM > 0 && (
               <span className="muted" style={{ fontSize: 'var(--text-xs)' }}>
                 + {formatUSDM(stats.undatedAmountM)} with no date on record

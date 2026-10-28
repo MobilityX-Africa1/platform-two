@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { Search, Landmark, ShieldCheck, Globe2, Layers } from 'lucide-react';
 import { useNotionData } from '../hooks/useNotionData';
 import { useAllocatorFilterStore } from '../store/allocatorFilterStore';
@@ -10,15 +10,17 @@ import { MetricCard, MetricGrid } from '../components/MetricCard';
 import { formatNumber } from '../lib/format';
 import { violetShade, violetTextShade } from '../lib/assetEconomics';
 import { Row } from '../components/DataTableRow';
+import { jumpToSection } from '../lib/sectionJump';
 
 const PAGE_SIZE = 40;
 
 export function AllocatorsPage() {
   const { allocators, status } = useNotionData();
-  const { search, setSearch, investorType, geo, instrument, focusArea, aminOnly, clearFilters } =
+  const { search, setSearch, investorType, geo, instrument, focusArea, aminOnly, idSet, showOnly, clearFilters } =
     useAllocatorFilterStore();
   const { groups, activeItems } = useAllocatorFilterGroups();
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const filtersRef = useRef(null);
 
   // Header stat strip, same pattern as Companies — computed over the full
   // unfiltered set so it reads as a summary of the ecosystem, not the filter.
@@ -32,7 +34,9 @@ export function AllocatorsPage() {
 
   if (status !== 'ready') return <CardSkeletonGrid count={8} />;
 
+  const idFilter = idSet ? new Set(idSet.ids) : null;
   const filtered = allocators.filter((a) => {
+    if (idFilter && !idFilter.has(a.id)) return false;
     if (search && !a.name.toLowerCase().includes(search.toLowerCase())) return false;
     if (investorType && a.typeOfInvestor !== investorType) return false;
     if (geo && !(a.geo || []).includes(geo)) return false;
@@ -43,6 +47,15 @@ export function AllocatorsPage() {
   });
 
   const sorted = [...filtered].sort((a, b) => a.name.localeCompare(b.name));
+
+  // Metric-card actions. Counts are over the unfiltered set, so "show" cards
+  // reset to exactly that set; the two breakdown cards open the Filters menu
+  // at the matching category, whose option list (with counts) is the breakdown.
+  const showOnlyAndJump = (filters) => {
+    showOnly(filters);
+    setVisibleCount(PAGE_SIZE);
+    jumpToSection('allocators-table');
+  };
   const visible = sorted.slice(0, visibleCount);
   const connectedValues = sorted.map((a) => a.connectedCompanies?.length ?? 0);
   const minConnected = Math.min(...connectedValues, 0);
@@ -73,20 +86,48 @@ export function AllocatorsPage() {
               }}
             />
           </div>
-          <FiltersMenu groups={groups} activeItems={activeItems} onClearAll={clearFilters} />
+          <FiltersMenu ref={filtersRef} groups={groups} activeItems={activeItems} onClearAll={clearFilters} />
         </div>
       </div>
 
       {headerStats && (
         <MetricGrid className="metric-grid-compact">
-          <MetricCard label="Allocators tracked" value={formatNumber(allocators.length)} icon={Landmark} accent="plum" />
-          <MetricCard label="AMIN members" value={formatNumber(headerStats.aminCount)} icon={ShieldCheck} accent="coral" />
-          <MetricCard label="Markets reached" value={formatNumber(headerStats.marketsReached)} icon={Globe2} accent="sky" />
-          <MetricCard label="Investor types" value={formatNumber(headerStats.investorTypes)} icon={Layers} accent="leaf" />
+          <MetricCard
+            label="Allocators tracked"
+            value={formatNumber(allocators.length)}
+            icon={Landmark}
+            accent="plum"
+            onClick={() => showOnlyAndJump({})}
+            actionHint="show all allocators"
+          />
+          <MetricCard
+            label="AMIN members"
+            value={formatNumber(headerStats.aminCount)}
+            icon={ShieldCheck}
+            accent="coral"
+            onClick={() => showOnlyAndJump({ aminOnly: true })}
+            actionHint="show only AMIN members"
+          />
+          <MetricCard
+            label="Markets reached"
+            value={formatNumber(headerStats.marketsReached)}
+            icon={Globe2}
+            accent="sky"
+            onClick={() => filtersRef.current?.openTo('geo')}
+            actionHint="open the breakdown by geographic focus"
+          />
+          <MetricCard
+            label="Investor types"
+            value={formatNumber(headerStats.investorTypes)}
+            icon={Layers}
+            accent="leaf"
+            onClick={() => filtersRef.current?.openTo('investorType')}
+            actionHint="open the breakdown by investor type"
+          />
         </MetricGrid>
       )}
 
-      <div className="data-table-wrap">
+      <div className="data-table-wrap" id="allocators-table">
         <table className="data-table">
           <thead>
             <tr>

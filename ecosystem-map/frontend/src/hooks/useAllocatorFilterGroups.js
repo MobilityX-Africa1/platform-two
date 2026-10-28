@@ -20,7 +20,7 @@ function countBy(allocators, getValues) {
 // allocator-specific field knowledge out of the generic popover component.
 export function useAllocatorFilterGroups() {
   const { allocators, status } = useNotionData();
-  const { investorType, geo, instrument, focusArea, aminOnly, toggleFilter, toggleAminOnly } =
+  const { investorType, geo, instrument, focusArea, aminOnly, idSet, toggleFilter, toggleAminOnly } =
     useAllocatorFilterStore();
 
   if (status !== 'ready') return { groups: [], activeItems: [] };
@@ -66,6 +66,7 @@ export function useAllocatorFilterGroups() {
     instrument && { key: 'instrument', text: instrument, onClear: () => toggleFilter('instrument', instrument) },
     focusArea && { key: 'focusArea', text: focusArea, onClear: () => toggleFilter('focusArea', focusArea) },
     aminOnly && { key: 'aminOnly', text: 'AMIN members only', onClear: toggleAminOnly },
+    idSet && { key: 'idSet', text: idSet.label, onClear: () => toggleFilter('idSet', idSet) },
   ].filter(Boolean);
 
   return { groups, activeItems };

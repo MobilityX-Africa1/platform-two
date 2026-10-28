@@ -10,6 +10,8 @@ import { CountryFlag } from '../components/CountryFlag';
 import { Breadcrumb } from '../components/Breadcrumb';
 import { Row } from '../components/DataTableRow';
 import { formatDate, displayStage, formatNumber, formatUSDM } from '../lib/format';
+import { StatTile } from '../components/StatTile';
+import { jumpToSection } from '../lib/sectionJump';
 
 // One of the three pillars that sum to a company's out-of-300 score. Shown as
 // a slim labelled meter in the hero rail, right next to the score it composes,
@@ -133,34 +135,46 @@ export function CompanyPage() {
     ...new Map(companyDeals.flatMap((d) => d.allocators).map((a) => [a.id, a])).values(),
   ];
 
+  const hasNetworkSection = Boolean(company.networkType || (company.stationType || []).length > 0);
+
   return (
     <div className="stack" style={{ gap: 24 }}>
       <Breadcrumb to="/companies" label="Companies" flush />
 
       <CompanyHero company={company} />
 
+      {/* Both funding tiles open Funding history (rounds + latest round —
+          individual deals are never listed publicly); stations open Asset &
+          network when that section exists. */}
       <div className="stat-tile-grid">
-        <div className="stat-tile">
-          <span className="stat-tile-label">Funding rounds</span>
-          <span className="stat-tile-value">{companyDeals.length}</span>
-        </div>
+        <StatTile
+          label="Funding rounds"
+          value={companyDeals.length}
+          onClick={() => jumpToSection('company-funding')}
+          actionHint="jump to funding history"
+        />
         {company.totalFundingRaisedM != null && (
-          <div className="stat-tile">
-            <span className="stat-tile-label">Total funding raised</span>
-            <span className="stat-tile-value accent">{formatUSDM(company.totalFundingRaisedM)}</span>
-          </div>
+          <StatTile
+            label="Total funding raised"
+            value={formatUSDM(company.totalFundingRaisedM)}
+            valueClassName="accent"
+            onClick={() => jumpToSection('company-funding')}
+            actionHint="jump to funding history"
+          />
         )}
         {company.estimatedStationCount != null && (
-          <div className="stat-tile">
-            <span className="stat-tile-label">Estimated stations</span>
-            <span className="stat-tile-value">{formatNumber(company.estimatedStationCount)}</span>
-          </div>
+          <StatTile
+            label="Estimated stations"
+            value={formatNumber(company.estimatedStationCount)}
+            onClick={hasNetworkSection ? () => jumpToSection('company-network') : undefined}
+            actionHint="jump to asset and network"
+          />
         )}
       </div>
 
-      {(company.networkType || (company.stationType || []).length > 0) && (
+      {hasNetworkSection && (
         <section>
-          <h2 className="section-title">Asset & network</h2>
+          <h2 className="section-title" id="company-network">Asset & network</h2>
           <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
             {company.networkType && <span className="chip chip-neutral">{company.networkType} network</span>}
             {(company.stationType || []).map((t) => (
@@ -183,7 +197,7 @@ export function CompanyPage() {
       )}
 
       <section>
-        <h2 className="section-title">Funding history</h2>
+        <h2 className="section-title" id="company-funding">Funding history</h2>
         <div className="card" style={{ padding: 16 }}>
           {companyDeals.length === 0 ? (
             <p className="muted">No recorded funding rounds yet.</p>
