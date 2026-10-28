@@ -66,7 +66,8 @@ export function AllocatorsPage() {
     <div className="stack" style={{ gap: 24 }}>
       <div className="page-header row" style={{ justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: 16 }}>
         <div>
-          <h1>Capital Allocators</h1>
+          <span className="eyebrow page-eyebrow" data-pillar="capital">Capital pillar</span>
+        <h1>Capital Allocators</h1>
           <p style={{ marginTop: 8 }}>
             {sorted.length} of {allocators.length} DFIs, VCs, CVCs, grants, and debt providers mapped to the ecosystem.
           </p>

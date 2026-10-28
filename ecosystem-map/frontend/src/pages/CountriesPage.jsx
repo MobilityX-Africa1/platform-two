@@ -33,6 +33,7 @@ export function CountriesPage() {
   return (
     <div className="stack" style={{ gap: 24 }}>
       <div className="page-header">
+        <span className="eyebrow page-eyebrow" data-pillar="countries">Countries pillar</span>
         <h1>Countries</h1>
         <p style={{ marginTop: 8 }}>
           {publishedCountries.length} markets tracked across the African mobility ecosystem.

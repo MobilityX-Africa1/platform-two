@@ -1,27 +1,35 @@
 import { Row } from './DataTableRow';
 
-// Plain name/value list — same square, zebra-striped, headerless data-table
-// language as every other list in the app, just without bars or axes.
-// `footnote` renders a separate muted/italic row below a dashed divider for
-// an unmapped/catch-all bucket that shouldn't rank alongside real categories
-// (e.g. an "Unspecified" region dominating by sheer size). `linkTo(item)` is
-// optional — when given, each row navigates (e.g. "Companies by vertical"
-// rows open /vertical/:name).
+// Ranked name/value list in the app's data-table language, with a thin
+// proportional bar under each label so the ranking reads at a glance.
+// Bars scale to the largest ranked item; the `footnote` row (an unmapped /
+// catch-all bucket such as "Unspecified" that shouldn't rank alongside real
+// categories) is excluded from that scale and drawn without a bar.
+// `linkTo(item)` is optional — when given, each row navigates (e.g.
+// "Companies by vertical" rows open /vertical/:name).
 export function RankedList({ items, formatValue, footnote, linkTo }) {
+  const max = Math.max(...items.map((i) => i.value || 0), 0) || 1;
+
+  const cells = (item) => (
+    <>
+      <td>
+        <span className="ranked-label">{item.label}</span>
+        <span className="ranked-bar" aria-hidden="true">
+          <span style={{ width: `${Math.max(2, ((item.value || 0) / max) * 100)}%` }} />
+        </span>
+      </td>
+      <td className="data-table-num-cell">{formatValue(item.value)}</td>
+    </>
+  );
+
   return (
-    <table className="data-table data-table-plain">
+    <table className="data-table data-table-plain ranked-table">
       <tbody>
         {items.map((item) =>
           linkTo ? (
-            <Row key={item.label} to={linkTo(item)}>
-              <td>{item.label}</td>
-              <td className="data-table-num-cell">{formatValue(item.value)}</td>
-            </Row>
+            <Row key={item.label} to={linkTo(item)}>{cells(item)}</Row>
           ) : (
-            <tr key={item.label}>
-              <td>{item.label}</td>
-              <td className="data-table-num-cell">{formatValue(item.value)}</td>
-            </tr>
+            <tr key={item.label}>{cells(item)}</tr>
           ),
         )}
         {footnote && (

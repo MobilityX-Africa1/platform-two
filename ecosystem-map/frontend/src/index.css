@@ -2298,3 +2298,396 @@ tr:last-child td { border-bottom: none; }
 .econ-section-table tbody tr:last-child td { border-bottom: none; }
 .econ-section-table tr.econ-total td { font-weight: 700; color: var(--econ-ink); }
 .econ-delta-cell { color: var(--econ-accent); font-weight: 600; }
+
+/* ==========================================================================
+   DESIGN LAYER v2 — premium shell, stat bands, data surfaces
+   --------------------------------------------------------------------------
+   One reviewable layer over the rules above (same specificity, later in the
+   cascade). It keeps every brand colour — plum, sky, leaf, coral, indigo —
+   and changes how they're composed:
+     1. Shell: a deep-plum navigation sidebar and a soft tinted canvas, so
+        content surfaces (white) finally sit on a distinct plane.
+     2. Stat bands: each page's metric row becomes one divided surface with
+        display-size figures instead of loose bordered boxes.
+     3. Data surfaces: tables and ranked lists get a header band, roomier
+        rows, hairline dividers, a hover indicator and proportional bars.
+   ========================================================================== */
+
+:root {
+  --canvas: #F5F2F4;            /* page plane — a breath of plum on warm white */
+  --bg: #F5F2F4;
+  --border: #E6E1E5;
+  --divider: #EFEAEE;           /* inner row/cell hairlines */
+  --surface-hover: #FBF8FB;
+  --thead-bg: #FAF7F9;
+  --sidebar-bg: var(--plum-dark);
+  --radius-surface: 14px;
+  --shadow-card: 0 1px 2px rgba(47, 28, 49, 0.04), 0 2px 10px rgba(47, 28, 49, 0.045);
+  --shadow-raised: 0 2px 6px rgba(47, 28, 49, 0.06), 0 14px 32px rgba(47, 28, 49, 0.10);
+}
+
+body { background: var(--canvas); }
+.app-background { background-color: var(--canvas); }
+
+/* ---- 1. Shell ---------------------------------------------------------- */
+
+.right-panel-inner {
+  max-width: 1180px;
+  padding: var(--space-6) var(--space-10) var(--space-16);
+}
+@media (max-width: 1024px) {
+  .right-panel-inner { padding: var(--space-5) var(--space-6) var(--space-12); }
+}
+@media (max-width: 640px) {
+  .right-panel-inner { padding: var(--space-4) var(--space-4) var(--space-12); }
+}
+
+.page-header { background: var(--canvas); padding-bottom: var(--space-3); }
+.page-header h1, .entity-hero h1 { letter-spacing: -0.028em; }
+h1 { font-size: clamp(26px, 19px + 1.5vw, 40px); }
+.page-header > p,
+.page-header > div > p {
+  font-size: var(--text-md);
+  color: var(--text-2);
+  max-width: 68ch;
+}
+.section-title {
+  font-size: var(--text-lg);
+  letter-spacing: -0.015em;
+  margin-bottom: var(--space-3);
+}
+
+/* Sidebar: deep plum, light text, pillar colours on their light tints. */
+.left-panel {
+  background:
+    radial-gradient(120% 50% at 0% 0%, rgba(118, 74, 122, 0.55) 0%, transparent 65%),
+    radial-gradient(90% 40% at 100% 100%, rgba(251, 161, 136, 0.10) 0%, transparent 70%),
+    var(--sidebar-bg);
+  border-right: none;
+  color: rgba(255, 255, 255, 0.82);
+}
+.brand-header { border-bottom: 1px solid rgba(255, 255, 255, 0.10); }
+.brand-logo {
+  box-sizing: content-box;
+  background: #fff;
+  border-radius: 12px;
+  padding: 6px 10px;
+  height: 52px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.22);
+}
+.left-panel.collapsed .brand-logo { height: 24px; max-width: 30px; padding: 5px; border-radius: 9px; }
+.status-line { color: rgba(255, 255, 255, 0.62); }
+.refresh-btn { background: rgba(255, 255, 255, 0.10); color: #fff; }
+.refresh-btn:hover { background: rgba(255, 255, 255, 0.18); }
+.sidebar-toggle { color: rgba(255, 255, 255, 0.85); }
+.sidebar-toggle:hover { background: rgba(255, 255, 255, 0.12); color: #fff; }
+.panel-section-title { color: rgba(255, 255, 255, 0.58); }
+
+.left-panel .tree-row {
+  color: rgba(255, 255, 255, 0.82);
+  border-radius: 10px;
+  padding: 9px var(--space-3);
+}
+.left-panel .tree-row:hover { background: rgba(255, 255, 255, 0.08); color: #fff; }
+.left-panel .tree-row.active {
+  background: rgba(255, 255, 255, 0.13);
+  color: #fff;
+  box-shadow: inset 3px 0 0 var(--coral);
+}
+.left-panel .tree-row .count,
+.left-panel .tree-row.active .count { color: rgba(255, 255, 255, 0.55); }
+.left-panel .tree-children { border-left-color: rgba(255, 255, 255, 0.14); }
+.left-panel .nav-icon--plum  { color: #E4C9E6; }
+.left-panel .nav-icon--sky   { color: var(--sky); }
+.left-panel .nav-icon--leaf  { color: var(--leaf); }
+.left-panel .nav-icon--coral { color: var(--coral); }
+/* Plum focus rings vanish on the plum sidebar — use white there. */
+.left-panel :is(a, button, [tabindex]):focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+.left-panel .skeleton {
+  background: linear-gradient(90deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.16) 50%, rgba(255,255,255,0.06) 100%);
+  background-size: 400px 100%;
+}
+.left-panel-resize-handle:hover::after,
+.left-panel.resizing .left-panel-resize-handle::after { background: rgba(255, 255, 255, 0.25); }
+.left-panel-scroll:hover::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.22); background-clip: padding-box; }
+
+/* Surfaces: one radius, one shadow, one border for every content block. */
+.card,
+.entity-hero,
+.data-table-wrap,
+.section-table-wrap,
+.econ-table-wrap {
+  border-radius: var(--radius-surface);
+  border-color: var(--border);
+  box-shadow: var(--shadow-card);
+  background: var(--surface);
+}
+.data-table-wrap, .section-table-wrap { overflow: hidden; overflow-x: auto; }
+.list-card { border-radius: var(--radius-surface); overflow: hidden; }
+.econ-scope { --econ-surface: var(--surface); --econ-border: var(--border); }
+
+/* ---- 2. Stat bands ----------------------------------------------------- */
+/* Grid gap of 1px over a border-coloured background draws the dividers. */
+.metric-grid,
+.metric-grid-compact,
+.stat-tile-grid,
+.econ-stat-tiles {
+  gap: 1px;
+  background: var(--border);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-surface);
+  overflow: hidden;
+  box-shadow: var(--shadow-card);
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+.stat-tile-grid, .econ-stat-tiles { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+
+.metric-grid > .metric-card,
+.metric-grid-compact > .metric-card,
+.stat-tile-grid > .stat-tile,
+.econ-stat-tiles > .econ-stat-tile {
+  position: relative;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: var(--surface);
+  padding: var(--space-5) var(--space-5) var(--space-5);
+  gap: var(--space-3);
+  min-height: 116px;
+  justify-content: space-between;
+}
+.stat-tile-grid > .stat-tile,
+.econ-stat-tiles > .econ-stat-tile { min-height: 96px; padding: var(--space-4) var(--space-5); gap: var(--space-2); }
+
+.metric-grid .metric-label,
+.metric-grid-compact .metric-label,
+.stat-tile-label,
+.econ-stat-label {
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  color: var(--text-2);
+}
+.metric-grid .metric-value,
+.metric-grid-compact .metric-value {
+  font-family: var(--font-display);
+  font-size: clamp(24px, 19px + 0.85vw, 32px);
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  line-height: 1.05;
+}
+.stat-tile-value,
+.econ-stat-value {
+  font-family: var(--font-display);
+  font-size: clamp(20px, 17px + 0.6vw, 26px);
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+.metric-grid .metric-card-icon,
+.metric-grid-compact .metric-card-icon { width: 30px; height: 30px; border-radius: 9px; }
+.metric-grid .metric-card-icon svg,
+.metric-grid-compact .metric-card-icon svg { width: 15px; height: 15px; }
+.metric-grid-compact .metric-delta-pill { font-size: var(--text-xs); padding: 2px 8px 2px 6px; }
+
+/* Interactive cells: tint + plum underline + a "view" arrow on hover/focus.
+   Inside a band the cell has no border/shadow of its own to change. */
+.metric-grid > .metric-card-link::after,
+.metric-grid-compact > .metric-card-link::after,
+.stat-tile-grid > .stat-tile-link::after,
+.econ-stat-tiles > .econ-stat-tile-link::after {
+  content: '→';
+  position: absolute;
+  right: var(--space-5);
+  bottom: var(--space-4);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--plum);
+  opacity: 0;
+  transform: translateX(-6px);
+  transition: opacity 0.18s var(--ease-out), transform 0.18s var(--ease-out);
+}
+@media (hover: hover) {
+  .metric-grid > .metric-card-link:hover,
+  .metric-grid-compact > .metric-card-link:hover,
+  .stat-tile-grid > .stat-tile-link:hover,
+  .econ-stat-tiles > .econ-stat-tile-link:hover {
+    background: var(--surface-hover);
+    box-shadow: inset 0 -2px 0 var(--plum);
+    border-color: transparent;
+  }
+  .metric-grid > .metric-card-link:hover::after,
+  .metric-grid-compact > .metric-card-link:hover::after,
+  .stat-tile-grid > .stat-tile-link:hover::after,
+  .econ-stat-tiles > .econ-stat-tile-link:hover::after { opacity: 1; transform: none; }
+}
+.metric-grid > .metric-card-link:focus-visible::after,
+.metric-grid-compact > .metric-card-link:focus-visible::after,
+.stat-tile-grid > .stat-tile-link:focus-visible::after,
+.econ-stat-tiles > .econ-stat-tile-link:focus-visible::after { opacity: 1; transform: none; }
+.metric-grid > .metric-card-link:focus-visible,
+.metric-grid-compact > .metric-card-link:focus-visible,
+.stat-tile-grid > .stat-tile-link:focus-visible,
+.econ-stat-tiles > .econ-stat-tile-link:focus-visible { outline-offset: -3px; }
+.metric-grid > .metric-card-link:active,
+.metric-grid-compact > .metric-card-link:active,
+.stat-tile-grid > .stat-tile-link:active,
+.econ-stat-tiles > .econ-stat-tile-link:active { transform: none; background: var(--hover-tint); }
+
+/* Two columns on phones; a trailing odd cell spans the row instead of
+   leaving an empty divider-coloured hole. */
+@media (max-width: 640px) {
+  .metric-grid, .metric-grid-compact, .stat-tile-grid, .econ-stat-tiles { grid-template-columns: 1fr 1fr; }
+  .metric-grid > :last-child:nth-child(odd),
+  .metric-grid-compact > :last-child:nth-child(odd),
+  .stat-tile-grid > :last-child:nth-child(odd),
+  .econ-stat-tiles > :last-child:nth-child(odd) { grid-column: span 2; }
+  .metric-grid > .metric-card, .metric-grid-compact > .metric-card { min-height: 104px; padding: var(--space-4); }
+}
+
+/* ---- 3. Data surfaces -------------------------------------------------- */
+
+.data-table thead th {
+  background: var(--thead-bg);
+  padding: 12px var(--space-4);
+  border-bottom: 1px solid var(--border);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: var(--text-2);
+}
+.data-table tbody td {
+  padding: 13px var(--space-4);
+  border-bottom: 1px solid var(--divider);
+  font-size: var(--text-sm);
+}
+.data-table tbody tr:nth-child(even) { background: transparent; }
+.data-table tbody tr[data-clickable] { transition: background 0.12s ease; }
+@media (hover: hover) {
+  .data-table tbody tr[data-clickable]:hover { background: var(--surface-hover); }
+  .data-table tbody tr[data-clickable]:hover > td:first-child { box-shadow: inset 3px 0 0 var(--plum); }
+}
+.data-table tbody tr[data-clickable]:active { background: var(--hover-tint); }
+.data-table-name { font-weight: 600; gap: var(--space-3); }
+.data-table-bar-track { height: 6px; border-radius: var(--radius-full); background: var(--divider); }
+.data-table-bar-fill { border-radius: var(--radius-full); }
+
+/* Ranked lists: label over a proportional bar, figure on the right. */
+.ranked-table tbody td { padding: 11px var(--space-4); vertical-align: middle; }
+.ranked-label { display: block; font-weight: 500; color: var(--ink); }
+.ranked-bar {
+  display: block;
+  height: 4px;
+  margin-top: 7px;
+  border-radius: var(--radius-full);
+  background: var(--divider);
+  overflow: hidden;
+}
+.ranked-bar > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--plum) 0%, #6E4772 100%);
+}
+.ranked-table .data-table-num-cell { font-weight: 600; color: var(--ink); width: 1%; padding-left: var(--space-5); }
+
+/* Section tables (detail pages): same hairline language, no zebra. */
+.section-table tbody tr:nth-child(even) td { background: transparent; }
+.section-table td { border-bottom-color: var(--divider); padding: 11px var(--space-4); }
+
+/* ---- v2 refinements (round 1 visual QA) -------------------------------- */
+
+/* Logo plate: hug the mark instead of framing empty white. */
+.brand-logo { height: 44px; width: 64px; max-width: 64px; padding: 4px 8px; border-radius: 10px; }
+
+/* Stat cells: figures share one baseline right under the label row; pills
+   and progress bars hang below the figure rather than pushing it around. */
+.metric-grid > .metric-card,
+.metric-grid-compact > .metric-card,
+.stat-tile-grid > .stat-tile,
+.econ-stat-tiles > .econ-stat-tile { justify-content: flex-start; }
+.metric-grid .metric-card-top,
+.metric-grid-compact .metric-card-top { margin-top: var(--space-2); }
+
+/* Investment chart: the headline block stays top, the chart settles to the
+   bottom of the card when the side column makes the row taller. */
+.hero-card { display: flex; flex-direction: column; }
+.hero-card .timeline-chart { margin-top: auto; }
+
+/* Stage bars: non-peak bars in a visible plum tint (the old --row-alt fill
+   all but disappeared on white); peak stays solid plum. */
+.bar-chart-bar { fill: #E3D8E4; }
+.bar-chart-bar-peak { fill: var(--plum); }
+
+/* ---- v2 refinements (round 2) ------------------------------------------ */
+
+/* Page eyebrow: names the pillar a page belongs to, keyed by that pillar's
+   brand colour — the same colour its icon carries in the sidebar. */
+.page-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+  color: var(--text-2);
+  letter-spacing: 0.1em;
+}
+.page-eyebrow::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-full);
+  background: var(--plum);
+  box-shadow: 0 0 0 3px var(--plum-bg);
+}
+.page-eyebrow[data-pillar="countries"]::before { background: var(--sky-dark); box-shadow: 0 0 0 3px var(--sky-bg); }
+.page-eyebrow[data-pillar="capital"]::before   { background: var(--leaf-dark); box-shadow: 0 0 0 3px var(--leaf-bg); }
+.page-eyebrow[data-pillar="economics"]::before { background: var(--coral-dark); box-shadow: 0 0 0 3px var(--coral-bg); }
+.page-header .page-eyebrow + h1 { margin-top: 0; }
+.page-header > div:first-child:has(.page-eyebrow),
+.page-header:has(> .page-eyebrow) { display: flex; flex-direction: column; align-items: flex-start; }
+.page-header.row > div:first-child { display: flex; flex-direction: column; align-items: flex-start; }
+
+/* A text-valued metric (e.g. leading vertical) reads at heading size, not
+   number size, so it never wraps the whole band taller. */
+.metric-grid .metric-value.metric-value-text,
+.metric-grid-compact .metric-value.metric-value-text {
+  font-size: var(--text-lg);
+  letter-spacing: -0.01em;
+  line-height: 1.25;
+}
+
+/* <button> cells don't stretch their children by default — keep the head
+   row full width so the icon chip sits right-aligned like the link cells. */
+.metric-card-link .metric-card-head,
+.stat-tile-link > * { width: 100%; }
+
+/* ---- v2 refinements (round 3): dashboard composition ------------------- */
+/* The trend chart takes the full width as the page's centrepiece; the two
+   compact breakdowns sit side by side beneath it. A 2fr chart beside a
+   stacked side column always left dead space in whichever was shorter. */
+.dashboard-hero-grid { grid-template-columns: 1fr; gap: var(--space-4); }
+.dashboard-hero-side { flex-direction: row; gap: var(--space-4); }
+.dashboard-hero-side > .card { flex: 1 1 0; min-width: 0; }
+.hero-card .timeline-chart { margin-top: var(--space-3); }
+.dashboard-top-grid { gap: var(--space-5) var(--space-4); }
+@media (max-width: 720px) {
+  .dashboard-hero-side { flex-direction: column; }
+}
+
+/* ---- v2 refinements (round 4): narrow-screen fit ----------------------- */
+@media (max-width: 640px) {
+  /* Bands: tracks may shrink below their content's min width. */
+  .metric-grid, .metric-grid-compact, .stat-tile-grid, .econ-stat-tiles {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+  /* Toolbar takes its own full-width line; the search flexes to fit. */
+  .page-header.row > .row { width: 100%; }
+  .page-header.row > .row .search-box--toolbar { flex: 1 1 auto; width: auto !important; min-width: 0; }
+}
+/* Ranked lists never outgrow their card: fixed layout, figure column sized
+   for a currency value, labels wrap. */
+.ranked-table { table-layout: fixed; width: 100%; }
+.ranked-table .data-table-num-cell { width: 6.5em; }
+.ranked-table td:first-child { overflow-wrap: anywhere; }
+/* Keep screen-reader-only hints inside their control's box: as absolutely
+   positioned children they otherwise anchor to .right-panel and escape the
+   table's horizontal scroll container, widening the page. */
+.th-sort, .metric-card-link, .stat-tile-link, .econ-stat-tile-link { position: relative; }

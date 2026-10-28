@@ -78,7 +78,8 @@ export function CompaniesPage() {
     <div className="stack" style={{ gap: 24 }}>
       <div className="page-header row" style={{ justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: 16 }}>
         <div>
-          <h1>Companies</h1>
+          <span className="eyebrow page-eyebrow" data-pillar="companies">Companies pillar</span>
+        <h1>Companies</h1>
           <p style={{ marginTop: 8 }}>
             {sorted.length} of {companies.length} e-mobility operators, OEMs, and tech companies tracked.
           </p>
@@ -135,6 +136,7 @@ export function CompaniesPage() {
               delta={`${formatNumber(headerStats.topVertical[1])} companies`}
               icon={Layers}
               accent="plum"
+              valueClassName="metric-value-text"
               to={`/vertical/${encodeURIComponent(headerStats.topVertical[0])}`}
               actionHint="open this vertical"
             />

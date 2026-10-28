@@ -32,7 +32,7 @@ const STAGE_ABBR = {
 };
 
 function formatDelta(amountM) {
-  if (!amountM) return 'None recorded this qtr';
+  if (!amountM) return '$0 this qtr';
   const sign = amountM > 0 ? '+' : '';
   return `${sign}${formatUSDM(amountM)} this qtr`;
 }
@@ -49,6 +49,7 @@ export function DashboardPage() {
   if (status !== 'ready' || !stats) {
     return (
       <div className="stack">
+        <span className="eyebrow page-eyebrow" data-pillar="overview">Ecosystem overview</span>
         <h1>Dashboard</h1>
         <CardSkeletonGrid count={4} />
         <ListSkeleton count={6} />
@@ -85,6 +86,7 @@ export function DashboardPage() {
   return (
     <div className="stack" style={{ gap: 24 }}>
       <div className="page-header">
+        <span className="eyebrow page-eyebrow" data-pillar="overview">Ecosystem overview</span>
         <h1>Dashboard</h1>
         <p style={{ marginTop: 8 }}>
           Live snapshot of the African e-mobility ecosystem — Countries, Companies, and Capital.
@@ -154,7 +156,7 @@ export function DashboardPage() {
               </span>
             )}
           </div>
-          <InvestmentTimeline data={stats.investmentByYear} formatValue={formatUSDM} />
+          <InvestmentTimeline data={stats.investmentByYear} formatValue={formatUSDM} height={230} />
         </div>
 
         <div className="dashboard-hero-side">

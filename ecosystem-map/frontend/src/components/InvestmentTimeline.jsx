@@ -1,6 +1,6 @@
 import { useLayoutEffect, useRef, useState } from 'react';
 
-const HEIGHT = 180;
+const DEFAULT_HEIGHT = 180;
 const PAD_TOP = 46;
 const PAD_SIDE = 30;
 const PAD_BOTTOM = 10;
@@ -21,7 +21,8 @@ const MIN_STEP_FOR_FULL_YEARS = 44;
 // than stretching a fixed viewBox via preserveAspectRatio="none") so circles
 // and text don't get scaled non-uniformly into ellipses/warped glyphs at
 // wide card widths.
-export function InvestmentTimeline({ data, formatValue }) {
+// `height` is optional (default 180) for callers that give the chart more room.
+export function InvestmentTimeline({ data, formatValue, height: HEIGHT = DEFAULT_HEIGHT }) {
   const containerRef = useRef(null);
   const [width, setWidth] = useState(DEFAULT_WIDTH);
   const [hoverIndex, setHoverIndex] = useState(null);

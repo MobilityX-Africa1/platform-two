@@ -107,6 +107,7 @@ export function DealsPage() {
   return (
     <div className="stack" style={{ gap: 24 }}>
       <div className="page-header">
+        <span className="eyebrow page-eyebrow" data-pillar="capital">Capital pillar</span>
         <h1>Deals Tracked</h1>
         <p style={{ marginTop: 8 }}>
           {filtered.length} of {deals.length} funding rounds recorded across the ecosystem — shown as aggregates only.

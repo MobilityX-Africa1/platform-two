@@ -65,7 +65,7 @@ export function AssetEconomicsPage() {
   return (
     <div className="stack" style={{ gap: 24 }}>
       <div className="page-header">
-        <span className="eyebrow">TCO analysis</span>
+        <span className="eyebrow page-eyebrow" data-pillar="economics">TCO analysis</span>
         <h1>Asset Economics</h1>
         <p style={{ marginTop: 8 }}>
           EV vs. ICE two-wheeler total cost of ownership across {economics.length} markets —
