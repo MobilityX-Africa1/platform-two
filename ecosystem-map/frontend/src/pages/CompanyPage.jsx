@@ -120,7 +120,7 @@ export function CompanyPage() {
   const company = companies.find((c) => c.id === id);
   if (!company) {
     return (
-      <div className="stack" style={{ gap: 16 }}>
+      <div className="stack page-stack">
         <p>Company not found.</p>
         <Breadcrumb to="/companies" label="Companies" />
       </div>
@@ -138,7 +138,7 @@ export function CompanyPage() {
   const hasNetworkSection = Boolean(company.networkType || (company.stationType || []).length > 0);
 
   return (
-    <div className="stack" style={{ gap: 24 }}>
+    <div className="stack page-stack">
       <Breadcrumb to="/companies" label="Companies" flush />
 
       <CompanyHero company={company} />

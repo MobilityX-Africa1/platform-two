@@ -1,5 +1,10 @@
+import type { DateValue } from '../types/records';
+
+// The four chip colorways defined in index.css.
+export type ChipClass = 'chip-neutral' | 'chip-upstream' | 'chip-downstream' | 'chip-cross-ecosystem';
+
 // Raw-dollar fields only (e.g. allocator "Typical investment size (USD)").
-export function formatUSD(amount) {
+export function formatUSD(amount: number | null | undefined): string {
   if (amount == null) return '—';
   if (Math.abs(amount) >= 1_000_000) return `$${(amount / 1_000_000).toFixed(1)}M`;
   if (Math.abs(amount) >= 1_000) return `$${(amount / 1_000).toFixed(0)}K`;
@@ -8,7 +13,7 @@ export function formatUSD(amount) {
 
 // Companies Pipeline and Deal Tracker amounts are stored pre-converted to
 // millions (e.g. 618 = $618m) — see CHANGES.md §4/§6. Never divide these.
-export function formatUSDM(amountM) {
+export function formatUSDM(amountM: number | null | undefined): string {
   if (amountM == null) return '—';
   if (Math.abs(amountM) >= 1000) return `$${(amountM / 1000).toFixed(1)}B`;
   if (Math.abs(amountM) >= 1) return `$${amountM % 1 === 0 ? amountM.toFixed(0) : amountM.toFixed(1)}M`;
@@ -17,7 +22,7 @@ export function formatUSDM(amountM) {
 
 // Precise currency for unit-economics figures (fuel/electricity prices, per-km
 // costs) where formatUSD's K/M abbreviation would round away the actual value.
-export function formatMoney(amount, decimals = 0) {
+export function formatMoney(amount: number | null | undefined, decimals = 0): string {
   if (amount == null) return '—';
   const sign = amount < 0 ? '-' : '';
   return `${sign}$${Math.abs(amount).toLocaleString('en-US', {
@@ -27,17 +32,17 @@ export function formatMoney(amount, decimals = 0) {
 }
 
 // Asset Economics rates are stored as whole-number percentages (27.57 = 27.57%).
-export function formatPercent(value, decimals = 1) {
+export function formatPercent(value: number | null | undefined, decimals = 1): string {
   if (value == null) return '—';
   return `${value.toFixed(decimals)}%`;
 }
 
-export function formatNumber(n) {
+export function formatNumber(n: number | null | undefined): string {
   if (n == null) return '—';
   return n.toLocaleString();
 }
 
-export function formatDate(dateValue) {
+export function formatDate(dateValue: DateValue | null | undefined): string {
   if (!dateValue?.start) return '—';
   return new Date(dateValue.start).toLocaleDateString('en-GB', {
     day: 'numeric',
@@ -48,22 +53,22 @@ export function formatDate(dateValue) {
 
 // Month + year only — for "updated Aug 2026"-style captions driven off a
 // Notion page's last_edited_time rather than a dedicated date property.
-export function formatMonthYear(isoString) {
+export function formatMonthYear(isoString: string | null | undefined): string {
   if (!isoString) return '—';
   return new Date(isoString).toLocaleDateString('en-GB', { month: 'short', year: 'numeric' });
 }
 
 // Strip the parenthetical ticket-size range Notion carries on the Stage
 // option (e.g. "Seed ($1m–$5m)" -> "Seed") — display only, never stored.
-export function displayStage(stage) {
+export function displayStage(stage: string | null | undefined): string | null {
   if (!stage) return null;
-  return stage.split(' (')[0];
+  return stage.split(' (')[0] ?? stage;
 }
 
 // Import duty status drives the policy chip's colour everywhere it appears —
 // waived reads positive (leaf), reduced is a partial win (sky), anything else
 // (standard/unset) is neutral so an unrecognised Notion value never renders unstyled.
-export function policyChipClass(status) {
+export function policyChipClass(status: string | null | undefined): ChipClass {
   if (!status) return 'chip-neutral';
   const s = status.toLowerCase();
   if (s.includes('waiv')) return 'chip-upstream';
@@ -80,7 +85,7 @@ const ELECTRIC_ASSET_TAGS = new Set([
 ]);
 const BATTERY_SWAP_TAGS = new Set(['2&3W Battery', 'Swap Station', 'Swap box']);
 
-export function evAssetTagClass(tag) {
+export function evAssetTagClass(tag: string): ChipClass {
   if (ELECTRIC_ASSET_TAGS.has(tag)) return 'chip-upstream';
   if (BATTERY_SWAP_TAGS.has(tag)) return 'chip-cross-ecosystem';
   return 'chip-downstream'; // infrastructure: Charging Stations / Charging units
@@ -90,15 +95,15 @@ export function evAssetTagClass(tag) {
 // type, ...) — same label always lands on the same one of the app's 4 chip
 // colors, so long list pages (Companies, Allocators) read at a glance by
 // category instead of every row's tag being the same flat neutral chip.
-const CATEGORY_CHIP_CLASSES = ['chip-neutral', 'chip-upstream', 'chip-downstream', 'chip-cross-ecosystem'];
+const CATEGORY_CHIP_CLASSES: readonly ChipClass[] = ['chip-neutral', 'chip-upstream', 'chip-downstream', 'chip-cross-ecosystem'];
 
-export function categoryChipClass(label) {
+export function categoryChipClass(label: string | null | undefined): ChipClass {
   if (!label) return 'chip-neutral';
   let hash = 0;
   for (let i = 0; i < label.length; i++) {
     hash = (hash * 31 + label.charCodeAt(i)) | 0;
   }
-  return CATEGORY_CHIP_CLASSES[Math.abs(hash) % CATEGORY_CHIP_CLASSES.length];
+  return CATEGORY_CHIP_CLASSES[Math.abs(hash) % CATEGORY_CHIP_CLASSES.length] ?? 'chip-neutral';
 }
 
 // Lightweight sentiment read on short status-style field values ("Active",
@@ -110,7 +115,7 @@ export function categoryChipClass(label) {
 const POSITIVE_STATUS = /\b(active|improving|strong|high|waived|available|good|excellent|growing)\b/i;
 const NEGATIVE_STATUS = /\b(inactive|declining|weak|low|poor|none|unavailable|banned|absent)\b/i;
 
-export function statusChipClass(value) {
+export function statusChipClass(value: string | null | undefined): ChipClass {
   if (!value) return 'chip-neutral';
   if (POSITIVE_STATUS.test(value)) return 'chip-upstream';
   if (NEGATIVE_STATUS.test(value)) return 'chip-cross-ecosystem';
@@ -123,6 +128,6 @@ export function statusChipClass(value) {
 // that are no longer operating instead of burying that in prose.
 const INACTIVE_STATUS = /\b(closed|shut ?down|acquired|defunct|inactive|dissolved|wound ?down)\b/i;
 
-export function isInactiveStatus(status) {
+export function isInactiveStatus(status: string | null | undefined): boolean {
   return !!status && INACTIVE_STATUS.test(status);
 }

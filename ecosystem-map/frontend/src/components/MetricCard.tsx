@@ -1,15 +1,19 @@
+import type { ComponentProps, ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowDownRight, ArrowUpRight } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { Sparkline } from './Sparkline';
 
-const ACCENT_CLASS = {
+export type Accent = 'plum' | 'sky' | 'leaf' | 'coral';
+
+const ACCENT_CLASS: Record<Accent, string> = {
   plum: 'metric-card-icon--plum',
   sky: 'metric-card-icon--sky',
   leaf: 'metric-card-icon--leaf',
   coral: 'metric-card-icon--coral',
 };
 
-const ACCENT_FILL_CLASS = {
+const ACCENT_FILL_CLASS: Record<Accent, string> = {
   plum: 'metric-card-progress-fill--plum',
   sky: 'metric-card-progress-fill--sky',
   leaf: 'metric-card-progress-fill--leaf',
@@ -31,23 +35,31 @@ const ACCENT_FILL_CLASS = {
 // is optional too — a 0–1 fraction that renders a filled bar under the
 // value, for metrics that are themselves "X out of a max" (e.g. a score
 // pillar out of its point cap) rather than a standalone number.
+export interface MetricCardProps {
+  label: ReactNode;
+  value: ReactNode;
+  delta?: ReactNode;
+  deltaTrend?: 'up' | 'down' | 'flat';
+  sparkline?: number[] | null;
+  /** 0–1 fraction. */
+  progress?: number | null;
+  to?: ComponentProps<typeof Link>['to'];
+  onClick?: () => void;
+  actionHint?: string;
+  icon?: LucideIcon;
+  accent?: Accent;
+  valueClassName?: string;
+}
+
 export function MetricCard({
   label, value, delta, deltaTrend = 'up', sparkline, progress, to, onClick, actionHint,
   icon: Icon, accent = 'plum', valueClassName,
-}) {
+}: MetricCardProps) {
   const hasTrend = sparkline && sparkline.length >= 2;
   const interactive = Boolean(to || onClick);
-  let Tag = 'div';
-  let tagProps = {};
-  if (to) {
-    Tag = Link;
-    tagProps = { to, onClick };
-  } else if (onClick) {
-    Tag = 'button';
-    tagProps = { type: 'button', onClick };
-  }
-  return (
-    <Tag {...tagProps} className={`card metric-card${interactive ? ' metric-card-link' : ''}`}>
+  const className = `card metric-card${interactive ? ' metric-card-link' : ''}`;
+  const body = (
+    <>
       <div className="metric-card-head">
         <span className="metric-label">{label}</span>
         {Icon && (
@@ -78,10 +90,14 @@ export function MetricCard({
         </div>
       )}
       {interactive && actionHint && <span className="visually-hidden"> — {actionHint}</span>}
-    </Tag>
+    </>
   );
+
+  if (to) return <Link to={to} onClick={onClick} className={className}>{body}</Link>;
+  if (onClick) return <button type="button" onClick={onClick} className={className}>{body}</button>;
+  return <div className={className}>{body}</div>;
 }
 
-export function MetricGrid({ children, className }) {
+export function MetricGrid({ children, className }: { children: ReactNode; className?: string }) {
   return <div className={`metric-grid${className ? ` ${className}` : ''}`}>{children}</div>;
 }

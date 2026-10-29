@@ -5,6 +5,7 @@ import { useNotionData } from '../hooks/useNotionData';
 import { CardSkeletonGrid } from '../components/Skeletons';
 import { MetricCard, MetricGrid } from '../components/MetricCard';
 import { MarketComparisonTable } from '../components/MarketComparisonTable';
+import { CountryFlag } from '../components/CountryFlag';
 import { getField } from '../lib/normalize';
 import { formatMoney, formatNumber } from '../lib/format';
 import { violetShade } from '../lib/assetEconomics';
@@ -63,11 +64,11 @@ export function AssetEconomicsPage() {
   const axisTicks = Array.from({ length: axisMax / AXIS_STEP + 1 }, (_, i) => i * AXIS_STEP);
 
   return (
-    <div className="stack" style={{ gap: 24 }}>
+    <div className="stack page-stack">
       <div className="page-header">
         <span className="eyebrow page-eyebrow" data-pillar="economics">TCO analysis</span>
         <h1>Asset Economics</h1>
-        <p style={{ marginTop: 8 }}>
+        <p>
           EV vs. ICE two-wheeler total cost of ownership across {economics.length} markets —
           fuel/electricity prices, financing, running costs, and 3-year TCO.
         </p>
@@ -104,7 +105,7 @@ export function AssetEconomicsPage() {
       {chartData.length > 0 && (
         <section>
           <h2 className="section-title" id="econ-savings">Annual savings, EV vs. ICE, by market</h2>
-          <div className="card" style={{ padding: 10, height: Math.max(180, chartData.length * 22) }}>
+          <div className="card" style={{ padding: '8px 10px', height: Math.max(160, chartData.length * 19) }}>
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
                 data={chartData}
@@ -121,6 +122,7 @@ export function AssetEconomicsPage() {
                   allowDecimals={false}
                   tickFormatter={(v) => money(v)}
                   tick={{ fontSize: 10, fill: '#898781', fontFamily: 'var(--font-mono)' }}
+                  height={20}
                   axisLine={false}
                   tickLine={false}
                 />
@@ -149,7 +151,7 @@ export function AssetEconomicsPage() {
 
       <section>
         <span className="eyebrow">Asset economics — market comparison</span>
-        <h2 style={{ marginTop: 4, marginBottom: 16 }} id="econ-markets">Annual cost of ownership, ICE vs. EV, 2W</h2>
+        <h2 className="section-title" style={{ marginTop: 2 }} id="econ-markets">Annual cost of ownership, ICE vs. EV, 2W</h2>
         <MarketComparisonTable markets={sorted} />
       </section>
 
@@ -157,25 +159,32 @@ export function AssetEconomicsPage() {
           market order as the comparison above. */}
       <section>
         <h2 className="section-title" id="econ-cost-per-km">Cost per km by market</h2>
-        <div className="data-table-wrap">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Market</th>
-                <th className="data-table-num-cell">EV / km</th>
-                <th>ICE / km</th>
-              </tr>
-            </thead>
-            <tbody>
-              {sorted.map((m) => (
-                <Row key={m.id} to={`/asset-economics/${m.id}`}>
-                  <td><div className="data-table-name"><span>{m.name}</span></div></td>
-                  <td className="data-table-num-cell">{money3(getField(m, 'Cost per km EV USD'))}</td>
-                  <td className="data-table-num-cell">{money3(getField(m, 'Fuel Cost per km ICE USD'))}</td>
-                </Row>
-              ))}
-            </tbody>
-          </table>
+        <div className="econ-scope">
+          <div className="econ-table-wrap">
+            <table className="econ-table">
+              <thead>
+                <tr>
+                  <th>Market</th>
+                  <th>ICE / km</th>
+                  <th>EV / km</th>
+                </tr>
+              </thead>
+              <tbody>
+                {sorted.map((m) => (
+                  <Row key={m.id} to={`/asset-economics/${m.id}`}>
+                    <td className="econ-market-name">
+                      <span className="row" style={{ gap: 8 }}>
+                        <CountryFlag name={m.name} size={16} />
+                        {m.name}
+                      </span>
+                    </td>
+                    <td className="econ-num-cell econ-ice-cell">{money3(getField(m, 'Fuel Cost per km ICE USD'))}</td>
+                    <td className="econ-num-cell econ-ev-cell">{money3(getField(m, 'Cost per km EV USD'))}</td>
+                  </Row>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       </section>
     </div>

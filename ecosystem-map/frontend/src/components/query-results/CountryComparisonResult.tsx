@@ -1,7 +1,8 @@
 import { CountryFlag } from '../CountryFlag';
 import { CaveatsBanner } from './QueryResultShared';
+import type { CountryComparisonResult as CountryComparisonResultData } from '../../types/query';
 
-export function CountryComparisonResult({ result }) {
+export function CountryComparisonResult({ result }: { result: CountryComparisonResultData }) {
   const { summary, countries, caveats } = result;
 
   return (

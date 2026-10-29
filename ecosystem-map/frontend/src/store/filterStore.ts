@@ -1,8 +1,38 @@
 import { create } from 'zustand';
 
-const CLEARED = { search: '', vertical: null, stage: null, evAssetTag: null, country: null, region: null, idSet: null };
+/** A specific set of records another view summarised, e.g. "In 30 tracked deals". */
+export interface IdSet {
+  ids: string[];
+  label: string;
+}
 
-export const useFilterStore = create((set) => ({
+export type CompanySort = 'rank' | 'funding';
+
+interface CompanyFilters {
+  search: string;
+  vertical: string | null;
+  stage: string | null;
+  evAssetTag: string | null;
+  country: string | null;
+  region: string | null;
+  idSet: IdSet | null;
+}
+
+/** Filters that toggle: setting the active value again clears it. */
+type ToggleKey = Exclude<keyof CompanyFilters, 'search'>;
+
+interface CompanyFilterState extends CompanyFilters {
+  sortBy: CompanySort;
+  setSearch: (search: string) => void;
+  toggleFilter: <K extends ToggleKey>(key: K, value: NonNullable<CompanyFilters[K]>) => void;
+  clearFilters: () => void;
+  showOnly: (filters?: Partial<CompanyFilters>, sortBy?: CompanySort) => void;
+  setSortBy: (sortBy: CompanySort) => void;
+}
+
+const CLEARED: CompanyFilters = { search: '', vertical: null, stage: null, evAssetTag: null, country: null, region: null, idSet: null };
+
+export const useFilterStore = create<CompanyFilterState>()((set) => ({
   ...CLEARED,
   // 'rank' (Top 50 ranking order — the list's default) | 'funding' (total
   // funding raised, descending). Independent of the filters above.

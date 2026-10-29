@@ -105,13 +105,47 @@ export function DealsPage() {
   const selectionLabel = `In ${filtered.length} tracked deal${filtered.length === 1 ? '' : 's'}${dealType ? ` (${dealType})` : ''}${search ? ` matching “${search}”` : ''}`;
 
   return (
-    <div className="stack" style={{ gap: 24 }}>
-      <div className="page-header">
-        <span className="eyebrow page-eyebrow" data-pillar="capital">Capital pillar</span>
-        <h1>Deals Tracked</h1>
-        <p style={{ marginTop: 8 }}>
-          {filtered.length} of {deals.length} funding rounds recorded across the ecosystem — shown as aggregates only.
-        </p>
+    <div className="stack page-stack">
+      <div className="page-header row" style={{ justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: 16 }}>
+        <div>
+          <span className="eyebrow page-eyebrow" data-pillar="capital">Capital pillar</span>
+          <h1>Deals Tracked</h1>
+          <p>
+            {filtered.length} of {deals.length} funding rounds recorded across the ecosystem — shown as aggregates only.
+          </p>
+        </div>
+        <div className="row" style={{ gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+          <div className="search-box search-box--toolbar" style={{ margin: 0, width: 220 }}>
+            <Search size={14} />
+            <input
+              type="text"
+              className="search-input"
+              placeholder="Search deals…"
+              aria-label="Filter deals by deal, company, or investor"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+          <button
+            type="button"
+            className={`filter-chip${dealType === '' ? ' selected' : ''}`}
+            aria-pressed={dealType === ''}
+            onClick={() => setDealType('')}
+          >
+            All types
+          </button>
+          {dealTypes.map((t) => (
+            <button
+              key={t}
+              type="button"
+              className={`filter-chip${dealType === t ? ' selected' : ''}`}
+              aria-pressed={dealType === t}
+              onClick={() => setDealType(t === dealType ? '' : t)}
+            >
+              {t}
+            </button>
+          ))}
+        </div>
       </div>
 
       <MetricGrid>
@@ -151,46 +185,13 @@ export function DealsPage() {
         />
       </MetricGrid>
 
-      <div className="row" style={{ gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-        <div className="search-box search-box--toolbar" style={{ margin: 0, width: 260 }}>
-          <Search size={14} />
-          <input
-            type="text"
-            className="search-input"
-            placeholder="Filter by deal, company, or investor…"
-            aria-label="Filter deals by deal, company, or investor"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-        </div>
-        <button
-          type="button"
-          className={`filter-chip${dealType === '' ? ' selected' : ''}`}
-          aria-pressed={dealType === ''}
-          onClick={() => setDealType('')}
-        >
-          All types
-        </button>
-        {dealTypes.map((t) => (
-          <button
-            key={t}
-            type="button"
-            className={`filter-chip${dealType === t ? ' selected' : ''}`}
-            aria-pressed={dealType === t}
-            onClick={() => setDealType(t === dealType ? '' : t)}
-          >
-            {t}
-          </button>
-        ))}
-      </div>
-
       {filtered.length === 0 ? (
         <p style={{ padding: 16 }}>No deals match these filters.</p>
       ) : (
-        <div className="dashboard-top-grid" style={{ gridTemplateColumns: '1fr 1fr' }}>
+        <div className="dashboard-top-grid dashboard-top-grid--two">
           <div className="dashboard-top-grid-cell">
             <h2 className="section-title" id="deals-split">Deal split by type</h2>
-            <div className="card" style={{ padding: stats.dealSplit.length <= 3 ? '16px 20px' : '4px 20px' }}>
+            <div className="card card-center" style={{ padding: stats.dealSplit.length <= 3 ? '12px 20px' : '4px 20px' }}>
               {stats.dealSplit.length <= 3 ? (
                 <DonutChart
                   segments={stats.dealSplit.map((d) => ({ label: d.dealType, value: d.amount }))}
@@ -237,7 +238,7 @@ export function DealsPage() {
               </span>
             )}
           </div>
-          <div className="card" style={{ padding: '20px 24px 12px' }}>
+          <div className="card" style={{ padding: '12px 20px 8px' }}>
             <InvestmentTimeline data={stats.investmentByYear} formatValue={formatUSDM} />
           </div>
         </div>

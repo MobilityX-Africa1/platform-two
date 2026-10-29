@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { LeftPanel } from './LeftPanel';
+import { PageSkeleton } from './Skeletons';
 import { QueryResultCard } from './QueryResultCard';
 import { BackButton } from './BackButton';
 import { FloatingChat } from './FloatingChat';
@@ -83,7 +84,13 @@ export function Layout() {
           )}
           <BackButton />
           <QueryResultCard />
-          <Outlet />
+          {/* Pages are lazy-loaded chunks (see App.jsx). This fallback only
+              shows on a cold load straight into one; in-app navigation is
+              wrapped in a transition, so the current page stays up until the
+              next one's chunk is ready. */}
+          <Suspense fallback={<PageSkeleton />}>
+            <Outlet />
+          </Suspense>
         </div>
       </div>
       <FloatingChat />

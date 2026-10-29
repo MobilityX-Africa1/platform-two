@@ -84,7 +84,7 @@ export function AssetEconomicsMarketPage() {
   const econ = economics.find((e) => e.id === id);
   if (!econ) {
     return (
-      <div className="stack" style={{ gap: 16 }}>
+      <div className="stack page-stack">
         <p>Market not found.</p>
         <Breadcrumb to="/asset-economics" label="All markets" />
       </div>
@@ -106,18 +106,16 @@ export function AssetEconomicsMarketPage() {
   const distanceKm = impliedAnnualDistanceKm(econ);
 
   return (
-    <div className="econ-scope stack" style={{ gap: 24 }}>
-      <div>
-        <Breadcrumb to="/asset-economics" label="All markets" />
-      </div>
+    <div className="econ-scope stack page-stack">
+      <Breadcrumb to="/asset-economics" label="All markets" flush />
 
       <div>
         <span className="eyebrow">Unit economics — full breakdown</span>
-        <h1 className="row" style={{ marginTop: 4, gap: 12 }}>
+        <h1 className="row" style={{ marginTop: 2, gap: 12 }}>
           <CountryFlag name={econ.name} size={28} />
           {econ.name}
         </h1>
-        <p className="econ-meta" style={{ marginTop: 6 }}>
+        <p className="econ-meta" style={{ marginTop: 4 }}>
           2-wheeler, annual basis
           {econ.lastEditedTime && ` · updated ${formatMonthYear(econ.lastEditedTime)}`}
           {econ.source && ` · source: ${econ.source}`}

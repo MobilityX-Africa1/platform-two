@@ -87,7 +87,7 @@ export function AllocatorPage() {
   const allocator = allocators.find((a) => a.id === id);
   if (!allocator) {
     return (
-      <div className="stack" style={{ gap: 16 }}>
+      <div className="stack page-stack">
         <p>Capital allocator not found.</p>
         <Breadcrumb to="/allocators" label="Capital Allocators" />
       </div>
@@ -125,7 +125,7 @@ export function AllocatorPage() {
   const hasMarkets = (allocator.markets || []).length > 0;
 
   return (
-    <div className="stack" style={{ gap: 24 }}>
+    <div className="stack page-stack">
       <Breadcrumb to="/allocators" label="Capital Allocators" flush />
 
       <AllocatorHero allocator={allocator} />

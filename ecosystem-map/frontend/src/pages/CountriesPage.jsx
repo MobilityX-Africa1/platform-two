@@ -31,19 +31,19 @@ export function CountriesPage() {
   const evRange = maxEvPenetration - minEvPenetration || 1;
 
   return (
-    <div className="stack" style={{ gap: 24 }}>
+    <div className="stack page-stack">
       <div className="page-header">
         <span className="eyebrow page-eyebrow" data-pillar="countries">Countries pillar</span>
         <h1>Countries</h1>
-        <p style={{ marginTop: 8 }}>
+        <p>
           {publishedCountries.length} markets tracked across the African mobility ecosystem.
         </p>
       </div>
 
-      <div className="stack" style={{ gap: 24 }}>
+      <div className="stack" style={{ gap: 20 }}>
         {byRegion.map((group) => (
           <div key={group.region}>
-            <div className="eyebrow" style={{ marginBottom: 8 }}>
+            <div className="eyebrow" style={{ marginBottom: 6 }}>
               {group.region} · {group.countries.length}
             </div>
             <div className="data-table-wrap">

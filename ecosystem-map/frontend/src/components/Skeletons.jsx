@@ -18,6 +18,19 @@ export function CardSkeletonGrid({ count = 4 }) {
   );
 }
 
+export function PageSkeleton() {
+  return (
+    <div className="stack page-stack" aria-busy="true" aria-label="Loading page">
+      <div className="stack" style={{ gap: 8 }}>
+        <div className="skeleton" style={{ height: 14, width: 120 }} />
+        <div className="skeleton" style={{ height: 36, width: '40%' }} />
+      </div>
+      <CardSkeletonGrid />
+      <ListSkeleton />
+    </div>
+  );
+}
+
 export function ListSkeleton({ count = 5 }) {
   return (
     <div className="stack">

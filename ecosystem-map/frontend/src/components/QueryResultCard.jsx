@@ -16,7 +16,7 @@ export function QueryResultCard() {
   if (!result && !loading) return null;
 
   return (
-    <div className="stack" style={{ gap: 24, marginBottom: 32 }}>
+    <div className="stack" style={{ gap: 20, marginBottom: 24 }}>
       <button type="button" className="breadcrumb-link" onClick={clear}>
         <ArrowLeft size={15} strokeWidth={2.25} />
         New query
@@ -31,7 +31,6 @@ export function QueryResultCard() {
 
       {!loading && result.type === 'answer' && (
         <QueryResultRouter
-          queryType={result.payload.queryType}
           result={result.payload.result}
           raw={result.payload.raw}
           parseError={result.payload.parseError}

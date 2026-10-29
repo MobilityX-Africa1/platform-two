@@ -84,11 +84,11 @@ export function DashboardPage() {
       : null;
 
   return (
-    <div className="stack" style={{ gap: 24 }}>
+    <div className="stack page-stack">
       <div className="page-header">
         <span className="eyebrow page-eyebrow" data-pillar="overview">Ecosystem overview</span>
         <h1>Dashboard</h1>
-        <p style={{ marginTop: 8 }}>
+        <p>
           Live snapshot of the African e-mobility ecosystem — Countries, Companies, and Capital.
         </p>
       </div>
@@ -139,16 +139,15 @@ export function DashboardPage() {
           <div className="hero-card-head">
             <div>
               <span className="metric-label">Investment over time</span>
-              <div className="hero-card-value num">{formatUSDM(stats.totalRaisedM)}</div>
-              {heroDeltaPct != null && (
-                <span
-                  className={`metric-delta-pill metric-delta-pill--${heroDeltaPct >= 0 ? 'up' : 'down'}`}
-                  style={{ marginTop: 6 }}
-                >
-                  {heroDeltaPct >= 0 ? '+' : ''}
-                  {heroDeltaPct}% vs {prevYear.year}
-                </span>
-              )}
+              <div className="hero-card-figure">
+                <span className="hero-card-value num">{formatUSDM(stats.totalRaisedM)}</span>
+                {heroDeltaPct != null && (
+                  <span className={`metric-delta-pill metric-delta-pill--${heroDeltaPct >= 0 ? 'up' : 'down'}`}>
+                    {heroDeltaPct >= 0 ? '+' : ''}
+                    {heroDeltaPct}% vs {prevYear.year}
+                  </span>
+                )}
+              </div>
             </div>
             {stats.undatedInvestmentM > 0 && (
               <span className="muted" style={{ fontSize: 'var(--text-xs)', textAlign: 'right' }}>
@@ -156,7 +155,7 @@ export function DashboardPage() {
               </span>
             )}
           </div>
-          <InvestmentTimeline data={stats.investmentByYear} formatValue={formatUSDM} height={230} />
+          <InvestmentTimeline data={stats.investmentByYear} formatValue={formatUSDM} height={196} />
         </div>
 
         <div className="dashboard-hero-side">

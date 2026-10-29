@@ -87,6 +87,20 @@ export default defineConfig(({ mode }) => {
     build: {
       outDir: path.resolve(repoRoot, 'dist'),
       emptyOutDir: true,
+      rolldownOptions: {
+        output: {
+          // React + the router change far less often than app code, so they
+          // get their own chunk that stays browser-cached across deploys.
+          codeSplitting: {
+            groups: [
+              {
+                name: 'react-vendor',
+                test: /[\\/]node_modules[\\/](react|react-dom|react-router|react-router-dom|scheduler)[\\/]/,
+              },
+            ],
+          },
+        },
+      },
     },
     plugins: [
       react(),

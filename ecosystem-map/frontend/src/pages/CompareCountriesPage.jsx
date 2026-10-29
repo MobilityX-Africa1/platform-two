@@ -71,11 +71,11 @@ export function CompareCountriesPage() {
   }
 
   return (
-    <div className="stack" style={{ gap: 24 }}>
+    <div className="stack page-stack">
       <div className="page-header">
         <span className="eyebrow page-eyebrow" data-pillar="countries">Countries pillar</span>
         <h1>Compare Countries</h1>
-        <p style={{ marginTop: 8 }}>
+        <p>
           Select 2–4 markets to compare demographics, policy, fuel &amp; energy pricing, and EV economics side by side.
         </p>
       </div>

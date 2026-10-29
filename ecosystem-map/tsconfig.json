@@ -1,0 +1,27 @@
+{
+  // Incremental adoption: .ts/.tsx files are strictly checked, existing
+  // .js/.jsx files are allowed (and get types from the .ts modules they
+  // import, for editor autocomplete) but aren't checked themselves. Convert a
+  // file by renaming it — nothing else needs to change. Vite strips the types
+  // at build time; `npm run typecheck` is what actually enforces them.
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+    "allowJs": true,
+    "checkJs": false,
+    "noEmit": true,
+    "isolatedModules": true,
+    "verbatimModuleSyntax": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "types": ["vite/client"]
+  },
+  "include": ["frontend/src", "vitest.config.js"]
+}

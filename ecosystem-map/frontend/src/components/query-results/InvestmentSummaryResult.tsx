@@ -2,8 +2,9 @@ import { TrendingUp, Handshake } from 'lucide-react';
 import { CountryFlag } from '../CountryFlag';
 import { MetricCard, MetricGrid } from '../MetricCard';
 import { CaveatsBanner } from './QueryResultShared';
+import type { InvestmentSummaryResult as InvestmentSummaryResultData } from '../../types/query';
 
-export function InvestmentSummaryResult({ result }) {
+export function InvestmentSummaryResult({ result }: { result: InvestmentSummaryResultData }) {
   const { summary, totalUSD, dealCount, byYear, byCountry, caveats } = result;
 
   return (
@@ -62,6 +63,6 @@ export function InvestmentSummaryResult({ result }) {
   );
 }
 
-function formatCount(n) {
+function formatCount(n: number) {
   return `${n} deal${n === 1 ? '' : 's'}`;
 }

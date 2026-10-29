@@ -147,7 +147,7 @@ export function CountryPage() {
   const country = countries.find((c) => c.id === id);
   if (!country) {
     return (
-      <div className="stack" style={{ gap: 16 }}>
+      <div className="stack page-stack">
         <p>Country not found.</p>
         <Breadcrumb to="/countries" label="Countries" />
       </div>
@@ -169,7 +169,7 @@ export function CountryPage() {
   );
 
   return (
-    <div className="stack" style={{ gap: 24 }}>
+    <div className="stack page-stack">
       <Breadcrumb to="/countries" label="Countries" />
       <div className="row page-header" style={{ gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
         <CountryFlag name={country.name} size={40} />

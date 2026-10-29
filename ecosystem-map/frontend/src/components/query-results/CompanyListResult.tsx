@@ -5,8 +5,9 @@ import { Row } from '../DataTableRow';
 import { MetricCard, MetricGrid } from '../MetricCard';
 import { formatNumber, isInactiveStatus } from '../../lib/format';
 import { CaveatsBanner } from './QueryResultShared';
+import type { CompanyListResult as CompanyListResultData, QueryCompany } from '../../types/query';
 
-function CompanyRow({ company }) {
+function CompanyRow({ company }: { company: QueryCompany }) {
   const inactive = isInactiveStatus(company.status);
   const cells = (
     <>
@@ -41,11 +42,10 @@ function CompanyRow({ company }) {
   );
 }
 
-// Renders a Claude "company_list" response — see backend/api/chat.js
-// RESPONSE_SCHEMA. Every group/row shape here comes straight from that
-// schema, so this stays a pure renderer with no defensive fallbacks for
-// shapes the API can't actually produce.
-export function CompanyListResult({ result }) {
+// Renders a "company_list" answer. parseQueryResult() has already checked
+// its shape (types/query.ts), so this stays a pure renderer with no
+// defensive fallbacks.
+export function CompanyListResult({ result }: { result: CompanyListResultData }) {
   const { summary, totalCount, groups, caveats } = result;
 
   return (

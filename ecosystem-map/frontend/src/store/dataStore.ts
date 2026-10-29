@@ -1,11 +1,15 @@
 import { create } from 'zustand';
 import { normalizeAll } from '../lib/normalize';
+import type { NormalizedRecord, NotionPage } from '../lib/normalize';
+import type {
+  Allocator, Company, Country, DataStatus, Deal, Economics, EntityType, Records,
+} from '../types/records';
 
 // Internal store keys stay short (companies/allocators/deals/countries) —
 // only the wire-level entity name changed when Notion's databases were
 // renamed to match Stuart's guidance doc. See CHANGES.md.
-const ENTITIES = ['countries', 'companies', 'allocators', 'deals', 'economics'];
-const DS_ENTITY = {
+const ENTITIES: EntityType[] = ['countries', 'companies', 'allocators', 'deals', 'economics'];
+const DS_ENTITY: Record<EntityType, string> = {
   countries: 'countries',
   companies: 'companiesPipeline',
   allocators: 'capitalAllocators',
@@ -21,12 +25,32 @@ const DS_ENTITY = {
 // still a stub (e.g. low-priority markets with minimal data). Pages that
 // list countries as top-level entities (CountriesPage) filter by
 // `country.publish` themselves instead.
-const PUBLISH_GATED = new Set(['companies', 'allocators']);
+const PUBLISH_GATED = new Set<EntityType>(['companies', 'allocators']);
 
-async function fetchEntity(entity, { fresh = false } = {}) {
+interface EntityResponse {
+  cached: boolean;
+  results: NotionPage[];
+}
+
+async function fetchEntity(entity: EntityType, { fresh = false } = {}): Promise<EntityResponse> {
   const res = await fetch(`/api/notion?entity=${DS_ENTITY[entity]}${fresh ? '&fresh=1' : ''}`);
   if (!res.ok) throw new Error(`Failed to fetch ${entity}: ${res.status}`);
-  return res.json(); // { cached, results }
+  return res.json();
+}
+
+// resolveRelations() works on untyped rows: relation keys come from Notion
+// at runtime, and it rewrites them in place (id arrays become record
+// arrays) and bolts on new keys. These helpers keep that dynamic access in
+// one place; the function's return is where rows become typed records.
+type Row = NormalizedRecord;
+type RowsByType = Record<EntityType, Row[]>;
+
+function related(row: Row, type: EntityType): Row[] {
+  return (row[`_related_${type}`] as Row[] | undefined) ?? [];
+}
+
+function addRelated(row: Row, type: EntityType, rows: Row[]): void {
+  row[`_related_${type}`] = [...related(row, type), ...rows];
 }
 
 /**
@@ -34,29 +58,31 @@ async function fetchEntity(entity, { fresh = false } = {}) {
  * belongs to (not by guessing the Notion property label text), so this
  * works regardless of what the fields are actually named in Notion.
  */
-function resolveRelations(recordsByType) {
-  const index = new Map(); // id -> { type, record }
+function resolveRelations(rowsByType: RowsByType): Records {
+  const index = new Map<string, { type: EntityType; row: Row }>();
   for (const type of ENTITIES) {
-    for (const record of recordsByType[type]) {
-      index.set(record.id, { type, record });
+    for (const row of rowsByType[type]) {
+      index.set(row.id, { type, row });
     }
   }
 
   for (const type of ENTITIES) {
-    for (const record of recordsByType[type]) {
-      for (const key of record._relationKeys) {
-        const resolved = record[key].map((id) => index.get(id)).filter(Boolean);
-        record[key] = resolved.map((r) => r.record);
+    for (const row of rowsByType[type]) {
+      for (const key of row._relationKeys) {
+        const resolved = (row[key] as string[])
+          .map((id) => index.get(id))
+          .filter((r) => r !== undefined);
+        row[key] = resolved.map((r) => r.row);
 
         for (const target of ENTITIES) {
-          const matches = resolved.filter((r) => r.type === target).map((r) => r.record);
+          const matches = resolved.filter((r) => r.type === target).map((r) => r.row);
           if (matches.length) {
-            record[`_related_${target}`] = [...(record[`_related_${target}`] || []), ...matches];
+            addRelated(row, target, matches);
             // reverse link, since Notion doesn't always mirror the relation
             // property on the target database (e.g. Companies -> Country
             // has no matching relation property back on Countries)
             for (const match of matches) {
-              match[`_related_${type}`] = [...(match[`_related_${type}`] || []), record];
+              addRelated(match, type, [row]);
             }
           }
         }
@@ -64,20 +90,25 @@ function resolveRelations(recordsByType) {
     }
   }
 
-  for (const company of recordsByType.companies) {
-    company.country = company._related_countries?.[0] ?? null;
+  // The rows now carry every relation, forward and reverse; the friendly
+  // fields below are assigned through the typed view of the same objects.
+  const records = rowsByType as unknown as Records;
+  const rowOf = (record: { id: string }) => record as unknown as Row;
+
+  for (const company of records.companies) {
+    company.country = (related(rowOf(company), 'countries')[0] ?? null) as Country | null;
   }
-  for (const deal of recordsByType.deals) {
-    deal.company = deal._related_companies?.[0] ?? null;
-    deal.allocators = deal._related_allocators ?? [];
+  for (const deal of records.deals) {
+    deal.company = (related(rowOf(deal), 'companies')[0] ?? null) as Company | null;
+    deal.allocators = related(rowOf(deal), 'allocators') as unknown as Allocator[];
   }
-  for (const allocator of recordsByType.allocators) {
-    allocator.markets = allocator._related_countries ?? [];
-    allocator.deals = allocator._related_deals ?? [];
-    allocator.portfolio = (allocator.deals || []).map((d) => d.company).filter(Boolean);
+  for (const allocator of records.allocators) {
+    allocator.markets = related(rowOf(allocator), 'countries') as unknown as Country[];
+    allocator.deals = related(rowOf(allocator), 'deals') as unknown as Deal[];
+    allocator.portfolio = allocator.deals.map((d) => d.company).filter((c) => c !== null);
   }
-  for (const country of recordsByType.countries) {
-    country.companies = country._related_companies ?? [];
+  for (const country of records.countries) {
+    country.companies = related(rowOf(country), 'companies') as unknown as Company[];
   }
 
   // Company <-> Capital Allocator, via shared operating country.
@@ -102,23 +133,23 @@ function resolveRelations(recordsByType) {
   ]);
   const UNIVERSAL_GEO_TAGS = new Set(['Pan-African', 'Global']);
 
-  function activeCountryIds(allocator) {
-    const ids = new Set((allocator.markets || []).map((c) => c.id));
+  function activeCountryIds(allocator: Allocator): Set<string> {
+    const ids = new Set(allocator.markets.map((c) => c.id));
     for (const tag of allocator.geo || []) {
       if (UNIVERSAL_GEO_TAGS.has(tag)) {
-        recordsByType.countries.forEach((c) => ids.add(c.id));
+        records.countries.forEach((c) => ids.add(c.id));
       } else if (REGION_GEO_TAGS.has(tag)) {
-        recordsByType.countries.filter((c) => c.region === tag).forEach((c) => ids.add(c.id));
+        records.countries.filter((c) => c.region === tag).forEach((c) => ids.add(c.id));
       } else {
-        recordsByType.countries.filter((c) => c.name === tag).forEach((c) => ids.add(c.id));
+        records.countries.filter((c) => c.name === tag).forEach((c) => ids.add(c.id));
       }
     }
     return ids;
   }
 
-  for (const allocator of recordsByType.allocators) {
+  for (const allocator of records.allocators) {
     const marketIds = activeCountryIds(allocator);
-    allocator.marketCompanies = recordsByType.companies.filter(
+    allocator.marketCompanies = records.companies.filter(
       (c) => c.country && marketIds.has(c.country.id),
     );
     allocator.connectedCompanies = [
@@ -127,26 +158,37 @@ function resolveRelations(recordsByType) {
       ).values(),
     ];
   }
-  for (const company of recordsByType.companies) {
-    company.marketAllocators = recordsByType.allocators.filter((a) =>
-      (a.marketCompanies || []).some((c) => c.id === company.id),
+  for (const company of records.companies) {
+    company.marketAllocators = records.allocators.filter((a) =>
+      a.marketCompanies.some((c) => c.id === company.id),
     );
   }
   // "Country (Link)" is the only relation on Asset Economics, and each row
   // covers a single market, so the first match is the whole relationship.
-  for (const econ of recordsByType.economics) {
-    econ.country = econ._related_countries?.[0] ?? null;
+  for (const econ of records.economics) {
+    econ.country = (related(rowOf(econ), 'countries')[0] ?? null) as Country | null;
   }
-  for (const country of recordsByType.countries) {
-    country.economics = country._related_economics?.[0] ?? null;
+  for (const country of records.countries) {
+    country.economics = (related(rowOf(country), 'economics')[0] ?? null) as Economics | null;
   }
 
-  return recordsByType;
+  return records;
 }
 
-export const useDataStore = create((set, get) => ({
-  status: 'idle', // idle | loading | ready | error
-  refreshing: false, // background refetch — never gates the UI like `status` does
+interface DataState extends Records {
+  status: DataStatus;
+  /** Background refetch — never gates the UI like `status` does. */
+  refreshing: boolean;
+  error: string | null;
+  cached: boolean;
+  lastRefreshed: Date | null;
+  fetchAll: (options?: { fresh?: boolean }) => Promise<void>;
+  refresh: () => Promise<void>;
+}
+
+export const useDataStore = create<DataState>()((set, get) => ({
+  status: 'idle',
+  refreshing: false,
   error: null,
   cached: false,
   lastRefreshed: null,
@@ -169,25 +211,29 @@ export const useDataStore = create((set, get) => ({
     }
     try {
       const responses = await Promise.all(ENTITIES.map((e) => fetchEntity(e, { fresh })));
-      const recordsByType = {};
+      const rowsByType = {} as RowsByType;
       let anyCached = false;
       responses.forEach((res, i) => {
-        const entity = ENTITIES[i];
-        let records = normalizeAll(res.results);
-        if (PUBLISH_GATED.has(entity)) records = records.filter((r) => r.publish === true);
-        recordsByType[entity] = records;
+        const entity = ENTITIES[i]!;
+        let rows = normalizeAll(res.results);
+        if (PUBLISH_GATED.has(entity)) rows = rows.filter((r) => r.publish === true);
+        rowsByType[entity] = rows;
         if (res.cached) anyCached = true;
       });
-      resolveRelations(recordsByType);
+      const records = resolveRelations(rowsByType);
       set({
         status: 'ready',
         refreshing: false,
         cached: anyCached,
         lastRefreshed: new Date(),
-        ...recordsByType,
+        ...records,
       });
     } catch (e) {
-      set({ status: isBackgroundRefresh ? 'ready' : 'error', refreshing: false, error: e.message });
+      set({
+        status: isBackgroundRefresh ? 'ready' : 'error',
+        refreshing: false,
+        error: e instanceof Error ? e.message : String(e),
+      });
     }
   },
 

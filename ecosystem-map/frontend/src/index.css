@@ -347,7 +347,7 @@ a { color: inherit; text-decoration: none; }
    doesn't sit on top of the page title. Toggled by BackButton.jsx via a
    body class, since only pages with an actual Back button need the space. */
 body.has-back-button .page-header {
-  padding-top: 48px;
+  padding-top: var(--pill-clearance);
 }
 
 /* Same reservation for pages that render their own <Breadcrumb> instead of
@@ -356,7 +356,18 @@ body.has-back-button .page-header {
    A sibling selector is enough here since every page renders Breadcrumb as
    .page-header's immediate predecessor, no body class required. */
 .breadcrumb-link + .page-header {
-  padding-top: 48px;
+  padding-top: var(--pill-clearance);
+}
+
+/* In flow, the pill sits inside that reserved clearance instead of stacking
+   its own height + the page gap + the clearance above the title — the
+   header's top padding only needs to be empty space once it's stuck. Net
+   effect: the title sits one --space-3 under the pill either way. */
+.page-stack > .breadcrumb-link:not(.breadcrumb-link-flush):has(+ .page-header) {
+  margin-bottom: calc(var(--space-3) - var(--pill-clearance) - var(--page-gap));
+}
+body.has-back-button .back-button:has(~ .page-stack > .page-header:first-child) {
+  margin-bottom: calc(var(--space-3) - var(--pill-clearance));
 }
 
 /* Floats independently on top of .page-header's single frosted box instead
@@ -366,10 +377,14 @@ body.has-back-button .page-header {
   position: sticky;
   top: var(--space-3);
   z-index: 25;
-  display: inline-flex;
+  /* Block-level (not inline-flex): an inline box keeps its line's strut
+     height, which would swallow the negative margin that tucks the pill
+     into the header's clearance below. */
+  display: flex;
+  width: fit-content;
   align-items: center;
   gap: var(--space-1);
-  margin: var(--space-3) 0 var(--space-4);
+  margin: 0 0 var(--space-3);
   padding: var(--space-1) var(--space-3) var(--space-1) var(--space-2);
   font-size: var(--text-sm);
   font-weight: 600;
@@ -398,7 +413,7 @@ body.has-back-button .page-header {
   align-items: center;
   align-self: flex-start;
   gap: var(--space-1);
-  margin: var(--space-3) 0 var(--space-4);
+  margin: 0 0 var(--space-3);
   padding: var(--space-1) var(--space-3) var(--space-1) var(--space-2);
   font-size: var(--text-sm);
   font-weight: 600;
@@ -1097,8 +1112,8 @@ body.has-back-button .page-header {
 .entity-hero {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: var(--space-4);
-  padding: var(--space-5);
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
@@ -1107,7 +1122,7 @@ body.has-back-button .page-header {
 .entity-hero-id {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: var(--space-2);
   min-width: 0;
 }
 
@@ -1155,7 +1170,7 @@ body.has-back-button .page-header {
    quieter than body copy so the name and chips still lead. */
 .entity-hero-summary {
   margin: 0;
-  max-width: 70ch;
+  max-width: 100ch;
   font-size: var(--text-sm);
   line-height: 1.6;
   color: var(--text-2);
@@ -1666,7 +1681,7 @@ button.stat-tile-link { background: var(--surface); }
 .donut-legend {
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
+  gap: var(--space-3);
   min-width: 0;
 }
 
@@ -1719,6 +1734,10 @@ button.stat-tile-link { background: var(--surface); }
   .dashboard-top-grid-cell-tall { grid-row: span 1; }
 }
 
+/* Two-up variant (Deals) — a class rather than an inline style, so the
+   one-column phone rule below can still override it. */
+.dashboard-top-grid--two { grid-template-columns: repeat(2, 1fr); }
+
 @media (max-width: 560px) {
   .dashboard-top-grid { grid-template-columns: 1fr; }
 }
@@ -1758,19 +1777,30 @@ button.stat-tile-link { background: var(--surface); }
 
 .hero-card-head {
   display: flex;
+  flex-wrap: wrap;
   align-items: flex-start;
   justify-content: space-between;
   gap: var(--space-3);
-  margin-bottom: var(--space-2);
 }
+
+/* Headline figure and its YoY pill share one line, so the chart starts
+   right under them instead of a row lower. */
+.hero-card-figure {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-2);
+  margin-top: 2px;
+}
+.hero-card-figure .metric-delta-pill { margin-top: 0; align-self: center; }
 
 .hero-card-value {
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
   font-size: var(--text-xl);
   font-weight: 700;
+  line-height: 1.2;
   color: var(--ink);
-  margin-top: 2px;
 }
 
 .compact-card {
@@ -1891,7 +1921,7 @@ th {
   border-bottom: 1px solid var(--border);
 }
 td {
-  padding: var(--space-3);
+  padding: var(--space-2) var(--space-3);
   border-bottom: 1px solid var(--border);
   font-size: var(--text-sm);
 }
@@ -2019,6 +2049,12 @@ tr:last-child td { border-bottom: none; }
 /* ---------- misc ---------- */
 
 .stack { display: flex; flex-direction: column; gap: var(--space-4); }
+/* Top-level wrapper of every routed page — one gap between header, stat
+   band and sections everywhere, instead of a per-page inline value. */
+.page-stack { gap: var(--page-gap); }
+/* A card whose content is shorter than its grid row (e.g. Deals' donut beside
+   the region list) centres it rather than leaving a gap at the bottom. */
+.card-center { justify-content: center; }
 .row { display: flex; align-items: center; gap: var(--space-3); }
 .muted { color: var(--muted); }
 .eyebrow {
@@ -2181,14 +2217,14 @@ tr:last-child td { border-bottom: none; }
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--econ-muted);
-  padding: var(--space-3) var(--space-4);
+  padding: 9px var(--space-4);
   border-bottom: 2px solid var(--econ-border);
   white-space: nowrap;
 }
 .econ-table thead th:first-child { text-align: left; }
 
 .econ-table tbody td {
-  padding: var(--space-4);
+  padding: 10px var(--space-4);
   border-bottom: 1px solid var(--econ-border);
   font-size: var(--text-sm);
   color: var(--econ-ink);
@@ -2314,14 +2350,18 @@ tr:last-child td { border-bottom: none; }
    ========================================================================== */
 
 :root {
-  --canvas: #F5F2F4;            /* page plane — a breath of plum on warm white */
-  --bg: #F5F2F4;
+  --canvas: #FBF9FA;            /* page plane — near-white with a faint plum tinge */
+  --bg: #FBF9FA;
   --border: #E6E1E5;
   --divider: #EFEAEE;           /* inner row/cell hairlines */
   --surface-hover: #FBF8FB;
   --thead-bg: #FAF7F9;
   --sidebar-bg: var(--plum-dark);
   --radius-surface: 14px;
+  /* Density: vertical rhythm between a page's top-level blocks, and the
+     space the sticky header keeps clear for the floating back pill. */
+  --page-gap: var(--space-5);
+  --pill-clearance: 48px;
   --shadow-card: 0 1px 2px rgba(47, 28, 49, 0.04), 0 2px 10px rgba(47, 28, 49, 0.045);
   --shadow-raised: 0 2px 6px rgba(47, 28, 49, 0.06), 0 14px 32px rgba(47, 28, 49, 0.10);
 }
@@ -2333,7 +2373,7 @@ body { background: var(--canvas); }
 
 .right-panel-inner {
   max-width: 1180px;
-  padding: var(--space-6) var(--space-10) var(--space-16);
+  padding: var(--space-6) var(--space-8) var(--space-16);
 }
 @media (max-width: 1024px) {
   .right-panel-inner { padding: var(--space-5) var(--space-6) var(--space-12); }
@@ -2342,19 +2382,21 @@ body { background: var(--canvas); }
   .right-panel-inner { padding: var(--space-4) var(--space-4) var(--space-12); }
 }
 
-.page-header { background: var(--canvas); padding-bottom: var(--space-3); }
+.page-header { background: var(--canvas); padding-bottom: var(--space-2); }
 .page-header h1, .entity-hero h1 { letter-spacing: -0.028em; }
-h1 { font-size: clamp(26px, 19px + 1.5vw, 40px); }
+h1 { font-size: clamp(24px, 18px + 1vw, 32px); }
 .page-header > p,
 .page-header > div > p {
-  font-size: var(--text-md);
+  margin-top: var(--space-1);
+  font-size: var(--text-base);
+  line-height: 1.55;
   color: var(--text-2);
-  max-width: 68ch;
+  max-width: 92ch;
 }
 .section-title {
-  font-size: var(--text-lg);
+  font-size: var(--text-md);
   letter-spacing: -0.015em;
-  margin-bottom: var(--space-3);
+  margin-bottom: var(--space-2);
 }
 
 /* Sidebar: deep plum, light text, pillar colours on their light tints. */
@@ -2427,20 +2469,32 @@ h1 { font-size: clamp(26px, 19px + 1.5vw, 40px); }
 .econ-scope { --econ-surface: var(--surface); --econ-border: var(--border); }
 
 /* ---- 2. Stat bands ----------------------------------------------------- */
-/* Grid gap of 1px over a border-coloured background draws the dividers. */
+/* A 1px gap over a border-coloured background draws the dividers. Wrapping
+   flex rather than an auto-fit grid: cells on a short last row grow to fill
+   it, so a band never shows an empty divider-coloured hole (3 + 1 cells). */
 .metric-grid,
 .metric-grid-compact,
 .stat-tile-grid,
 .econ-stat-tiles {
+  display: flex;
+  flex-wrap: wrap;
   gap: 1px;
   background: var(--border);
   border: 1px solid var(--border);
   border-radius: var(--radius-surface);
   overflow: hidden;
   box-shadow: var(--shadow-card);
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
 }
-.stat-tile-grid, .econ-stat-tiles { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+.metric-grid > *,
+.metric-grid-compact > *,
+.stat-tile-grid > *,
+.econ-stat-tiles > * { flex: 1 1 180px; min-width: 0; }
+.stat-tile-grid > *, .econ-stat-tiles > * { flex-basis: 150px; }
+/* The four-up KPI bands step straight from 4 columns to 2x2 — never 3 + 1. */
+.metric-grid:has(> :nth-child(4):last-child) > * { flex-basis: calc(25% - 1px); }
+@media (max-width: 960px) {
+  .metric-grid:has(> :nth-child(4):last-child) > * { flex-basis: calc(50% - 1px); }
+}
 
 .metric-grid > .metric-card,
 .metric-grid-compact > .metric-card,
@@ -2451,13 +2505,12 @@ h1 { font-size: clamp(26px, 19px + 1.5vw, 40px); }
   border-radius: 0;
   box-shadow: none;
   background: var(--surface);
-  padding: var(--space-5) var(--space-5) var(--space-5);
+  padding: var(--space-5);
   gap: var(--space-3);
-  min-height: 116px;
   justify-content: space-between;
 }
 .stat-tile-grid > .stat-tile,
-.econ-stat-tiles > .econ-stat-tile { min-height: 96px; padding: var(--space-4) var(--space-5); gap: var(--space-2); }
+.econ-stat-tiles > .econ-stat-tile { padding: var(--space-3) var(--space-4); gap: 6px; }
 
 .metric-grid .metric-label,
 .metric-grid-compact .metric-label,
@@ -2471,7 +2524,7 @@ h1 { font-size: clamp(26px, 19px + 1.5vw, 40px); }
 .metric-grid .metric-value,
 .metric-grid-compact .metric-value {
   font-family: var(--font-display);
-  font-size: clamp(24px, 19px + 0.85vw, 32px);
+  font-size: clamp(22px, 18px + 0.6vw, 28px);
   font-weight: 700;
   letter-spacing: -0.025em;
   line-height: 1.05;
@@ -2479,14 +2532,28 @@ h1 { font-size: clamp(26px, 19px + 1.5vw, 40px); }
 .stat-tile-value,
 .econ-stat-value {
   font-family: var(--font-display);
-  font-size: clamp(20px, 17px + 0.6vw, 26px);
+  font-size: clamp(19px, 16px + 0.5vw, 23px);
   letter-spacing: -0.02em;
   line-height: 1.1;
 }
 .metric-grid .metric-card-icon,
-.metric-grid-compact .metric-card-icon { width: 30px; height: 30px; border-radius: 9px; }
+.metric-grid-compact .metric-card-icon { width: 26px; height: 26px; border-radius: 8px; }
 .metric-grid .metric-card-icon svg,
-.metric-grid-compact .metric-card-icon svg { width: 15px; height: 15px; }
+.metric-grid-compact .metric-card-icon svg { width: 14px; height: 14px; }
+/* Label centres on the icon chip, and the delta pill rides on the value's
+   line (wrapping under it only when the cell is too narrow) — the two
+   things that used to add a dead row each to every stat cell. */
+.metric-grid .metric-card-head,
+.metric-grid-compact .metric-card-head { align-items: center; }
+.metric-grid .metric-card-text,
+.metric-grid-compact .metric-card-text {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1) var(--space-2);
+}
+.metric-grid .metric-delta-pill,
+.metric-grid-compact .metric-delta-pill { margin-top: 0; align-self: center; }
 .metric-grid-compact .metric-delta-pill { font-size: var(--text-xs); padding: 2px 8px 2px 6px; }
 
 /* Interactive cells: tint + plum underline + a "view" arrow on hover/focus.
@@ -2497,8 +2564,8 @@ h1 { font-size: clamp(26px, 19px + 1.5vw, 40px); }
 .econ-stat-tiles > .econ-stat-tile-link::after {
   content: '→';
   position: absolute;
-  right: var(--space-5);
-  bottom: var(--space-4);
+  right: var(--space-4);
+  bottom: var(--space-3);
   font-size: 16px;
   font-weight: 600;
   color: var(--plum);
@@ -2533,29 +2600,24 @@ h1 { font-size: clamp(26px, 19px + 1.5vw, 40px); }
 .stat-tile-grid > .stat-tile-link:active,
 .econ-stat-tiles > .econ-stat-tile-link:active { transform: none; background: var(--hover-tint); }
 
-/* Two columns on phones; a trailing odd cell spans the row instead of
-   leaving an empty divider-coloured hole. */
+/* Two columns on phones; a trailing odd cell grows to span the row. */
 @media (max-width: 640px) {
-  .metric-grid, .metric-grid-compact, .stat-tile-grid, .econ-stat-tiles { grid-template-columns: 1fr 1fr; }
-  .metric-grid > :last-child:nth-child(odd),
-  .metric-grid-compact > :last-child:nth-child(odd),
-  .stat-tile-grid > :last-child:nth-child(odd),
-  .econ-stat-tiles > :last-child:nth-child(odd) { grid-column: span 2; }
-  .metric-grid > .metric-card, .metric-grid-compact > .metric-card { min-height: 104px; padding: var(--space-4); }
+  .metric-grid > *, .metric-grid-compact > *, .stat-tile-grid > *, .econ-stat-tiles > * { flex-basis: calc(50% - 1px); }
+  .metric-grid > .metric-card, .metric-grid-compact > .metric-card { padding: var(--space-3) var(--space-4); }
 }
 
 /* ---- 3. Data surfaces -------------------------------------------------- */
 
 .data-table thead th {
   background: var(--thead-bg);
-  padding: 12px var(--space-4);
+  padding: 9px var(--space-4);
   border-bottom: 1px solid var(--border);
   font-size: 11px;
   letter-spacing: 0.08em;
   color: var(--text-2);
 }
 .data-table tbody td {
-  padding: 13px var(--space-4);
+  padding: 8px var(--space-4);
   border-bottom: 1px solid var(--divider);
   font-size: var(--text-sm);
 }
@@ -2567,16 +2629,19 @@ h1 { font-size: clamp(26px, 19px + 1.5vw, 40px); }
 }
 .data-table tbody tr[data-clickable]:active { background: var(--hover-tint); }
 .data-table-name { font-weight: 600; gap: var(--space-3); }
+/* Fixed badge width in tables (fits "#50") so logos line up whatever the rank. */
+.data-table-name .rank-badge { min-width: 42px; flex-shrink: 0; }
+.rank-badge-empty { visibility: hidden; }
 .data-table-bar-track { height: 6px; border-radius: var(--radius-full); background: var(--divider); }
 .data-table-bar-fill { border-radius: var(--radius-full); }
 
 /* Ranked lists: label over a proportional bar, figure on the right. */
-.ranked-table tbody td { padding: 11px var(--space-4); vertical-align: middle; }
+.ranked-table tbody td { padding: 8px var(--space-4); vertical-align: middle; }
 .ranked-label { display: block; font-weight: 500; color: var(--ink); }
 .ranked-bar {
   display: block;
   height: 4px;
-  margin-top: 7px;
+  margin-top: 5px;
   border-radius: var(--radius-full);
   background: var(--divider);
   overflow: hidden;
@@ -2591,7 +2656,7 @@ h1 { font-size: clamp(26px, 19px + 1.5vw, 40px); }
 
 /* Section tables (detail pages): same hairline language, no zebra. */
 .section-table tbody tr:nth-child(even) td { background: transparent; }
-.section-table td { border-bottom-color: var(--divider); padding: 11px var(--space-4); }
+.section-table td { border-bottom-color: var(--divider); padding: 8px var(--space-4); }
 
 /* ---- v2 refinements (round 1 visual QA) -------------------------------- */
 
@@ -2604,8 +2669,6 @@ h1 { font-size: clamp(26px, 19px + 1.5vw, 40px); }
 .metric-grid-compact > .metric-card,
 .stat-tile-grid > .stat-tile,
 .econ-stat-tiles > .econ-stat-tile { justify-content: flex-start; }
-.metric-grid .metric-card-top,
-.metric-grid-compact .metric-card-top { margin-top: var(--space-2); }
 
 /* Investment chart: the headline block stays top, the chart settles to the
    bottom of the card when the side column makes the row taller. */
@@ -2625,7 +2688,7 @@ h1 { font-size: clamp(26px, 19px + 1.5vw, 40px); }
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
-  margin-bottom: var(--space-2);
+  margin-bottom: 6px;
   color: var(--text-2);
   letter-spacing: 0.1em;
 }
@@ -2666,18 +2729,14 @@ h1 { font-size: clamp(26px, 19px + 1.5vw, 40px); }
 .dashboard-hero-grid { grid-template-columns: 1fr; gap: var(--space-4); }
 .dashboard-hero-side { flex-direction: row; gap: var(--space-4); }
 .dashboard-hero-side > .card { flex: 1 1 0; min-width: 0; }
-.hero-card .timeline-chart { margin-top: var(--space-3); }
-.dashboard-top-grid { gap: var(--space-5) var(--space-4); }
+.hero-card .timeline-chart { margin-top: var(--space-1); }
+.dashboard-top-grid { gap: var(--space-4); }
 @media (max-width: 720px) {
   .dashboard-hero-side { flex-direction: column; }
 }
 
 /* ---- v2 refinements (round 4): narrow-screen fit ----------------------- */
 @media (max-width: 640px) {
-  /* Bands: tracks may shrink below their content's min width. */
-  .metric-grid, .metric-grid-compact, .stat-tile-grid, .econ-stat-tiles {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  }
   /* Toolbar takes its own full-width line; the search flexes to fit. */
   .page-header.row > .row { width: 100%; }
   .page-header.row > .row .search-box--toolbar { flex: 1 1 auto; width: auto !important; min-width: 0; }

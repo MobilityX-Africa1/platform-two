@@ -1,7 +1,8 @@
 import { MetricCard, MetricGrid } from '../MetricCard';
 import { CaveatsBanner } from './QueryResultShared';
+import type { SingleMetricResult as SingleMetricResultData } from '../../types/query';
 
-export function SingleMetricResult({ result }) {
+export function SingleMetricResult({ result }: { result: SingleMetricResultData }) {
   const { summary, value, label, context, caveats } = result;
 
   return (

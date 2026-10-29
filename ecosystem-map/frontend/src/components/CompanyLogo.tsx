@@ -5,7 +5,7 @@ import { useState } from 'react';
 // the real logo locally instead of falling back to an initial letter.
 // Bulk-sourced from the Companies Pipeline brand-asset folders and keyed by
 // the exact Notion company name, lowercased (see CompanyLogo props below).
-const LOCAL_LOGO_OVERRIDES = {
+const LOCAL_LOGO_OVERRIDES: Record<string, string> = {
   basigo: '/logos/basigo.webp',
   spiro: '/logos/spiro.png',
   gigmile: '/logos/gigmile.webp',
@@ -239,7 +239,7 @@ const LOCAL_LOGO_OVERRIDES = {
   "hoplatours": "/logos/hoplatours.png",
 };
 
-function extractDomain(url) {
+function extractDomain(url: string | null | undefined): string | null {
   if (!url) return null;
   try {
     const { hostname } = new URL(url.startsWith('http') ? url : `https://${url}`);
@@ -249,9 +249,15 @@ function extractDomain(url) {
   }
 }
 
-export function CompanyLogo({ name, website, size = 28 }) {
+interface CompanyLogoProps {
+  name: string | null | undefined;
+  website?: string | null;
+  size?: number;
+}
+
+export function CompanyLogo({ name, website, size = 28 }: CompanyLogoProps) {
   const [failed, setFailed] = useState(false);
-  const localSrc = LOCAL_LOGO_OVERRIDES[name?.trim().toLowerCase()];
+  const localSrc = name ? LOCAL_LOGO_OVERRIDES[name.trim().toLowerCase()] : undefined;
   const domain = extractDomain(website);
   const src = localSrc || (domain ? `https://www.google.com/s2/favicons?domain=${domain}&sz=128` : null);
 

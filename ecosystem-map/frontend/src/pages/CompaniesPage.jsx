@@ -75,12 +75,12 @@ export function CompaniesPage() {
   const raisedRangeM = maxRaisedM - minRaisedM || 1;
 
   return (
-    <div className="stack" style={{ gap: 24 }}>
+    <div className="stack page-stack">
       <div className="page-header row" style={{ justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: 16 }}>
         <div>
           <span className="eyebrow page-eyebrow" data-pillar="companies">Companies pillar</span>
         <h1>Companies</h1>
-          <p style={{ marginTop: 8 }}>
+          <p>
             {sorted.length} of {companies.length} e-mobility operators, OEMs, and tech companies tracked.
           </p>
         </div>
@@ -175,7 +175,7 @@ export function CompaniesPage() {
               return (
                 <Row key={c.id} to={`/company/${c.id}`}>
                   <td><div className="data-table-name">
-                    <RankBadge rank={c.rankingOrder} />
+                    <RankBadge rank={c.rankingOrder} reserve />
                     <CompanyLogo name={c.name} website={c.website} size={24} />
                     <span>{c.name}</span>
                   </div></td>
