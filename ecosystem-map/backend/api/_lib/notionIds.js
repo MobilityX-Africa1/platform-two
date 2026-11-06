@@ -1,10 +1,13 @@
 // Migrated 2026-07-20 to match Stuart's Platform Architecture, Data
 // Structure & Guidance Document (v1.0) — see CHANGES.md at the repo root.
+// Re-pointed 2026-11-06 at the copies in the "MobilityX Africa" workspace.
 export const DS = {
-  countries:         '458cbe82-1f14-49f8-be80-9f4f2c9879c0',
-  companiesPipeline: '29d01e8d-bfee-4163-b4cb-831976f468c3',
-  capitalAllocators: '234060f7-8fd0-489e-92d3-f004fe46bf2a',
-  dealTracker:       'd6a317b8-9ddf-40e8-9f77-27623daa3527',
+  countries:         '23a7010b-5a2a-837f-a64f-07bb5ba2e6e7',
+  companiesPipeline: '02b7010b-5a2a-8212-bc6b-87e9110b9d35',
+  capitalAllocators: 'f2a7010b-5a2a-82ec-9c6a-873a33d39aae',
+  dealTracker:       'a717010b-5a2a-82a3-8ed7-87f8f624d7fa',
+  // Not yet shared with the MobilityX Africa integration — this is still the
+  // old workspace's ID. Nothing in the app reads it today.
   assessmentRecords: '61180369-0a71-4b02-abb1-9e93c7430685',
-  assetEconomics:    'a44e96c6-974d-4902-a7f6-5f806fd633f7',
+  assetEconomics:    '3ff7010b-5a2a-8200-9bf7-07efc68cc00b',
 };
